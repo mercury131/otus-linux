@@ -9,18 +9,16 @@
 
 Используемые репозитории:
 - **https://github.com/mercury131/otus-linux** - репозиторий для выполнения домашних заданий OTUS
-- **https://github.com/mercury131/otus-linux/tree/master/lesson1** - ссылка на данное домашнее задание
+- **https://github.com/mercury131/otus-linux/tree/master/lesson2** - ссылка на данное домашнее задание
 
 В рамках данного домашнего задания выполнено:
-- **Установка ядра из дополнительного репозитория** 
-- **Сборка и установка ядра с kernel.org** 
-- **Шаги автоматизированы в vagrantfile** 
+- **Создание Vagrantfile с встроенным скриптом для создания и тестирования отказа RAID массива** 
+- **Создание Vagrantfile с встроенным скриптом для создания RAID массива и переноса на него ОС** 
+- **Описаны шаги выполнения данного задания** 
 
 Используемые файлы и директории:
-- Во вложенной директории kernel-ml расположен Vagrantfile с шаблоном гостевой ОС Centos 7 с установленным ядром kernel-ml 5-й версии
-- Во вложенной директории kernel-ml-auto расположен Vagrantfile с шаблоном гостевой ОС Centos 7 с прописанными шагами установки ядра kernel-ml 5-й версии и установкой Virtual Box  Guest Additions (не требуется кастомный образ)
-- Во вложенной директории kernel-source расположен Vagrantfile с шаблоном гостевой ОС Centos 7 с ядром собранным с kernel.org, 5-й версии
-- Во вложенной директории kernel-source-auto расположен Vagrantfile с шаблоном гостевой ОС Centos 7 с ядром собранным с kernel.org, 5-й версии, с прописанными шагами установки и сборки ядра (не требуется кастомный образ)
+- Во директории lesson2 расположен Vagrantfile с встроенным скриптом для создания и тестирования отказа RAID массива
+- Во вложенной директории move расположен Vagrantfile с встроенным скриптом для создания RAID массива и переноса на него ОС
 
 
 # Как проверить домашнее задание?
@@ -35,49 +33,28 @@ git clone git@github.com:mercury131/otus-linux.git
 
 ```
 vagrant plugin install vagrant-reload
-vagrant plugin install vagrant-disksize
 ```
 
-Для запуска VM с шаблоном гостевой ОС Centos 7 с установленным ядром kernel-ml 5-й версии выполните:
+Для запуска VM с встроенным скриптом для создания и тестирования отказа RAID массива выполните:
 
 ```
-cd otus-linux/lesson1/kernel-ml/
+cd otus-linux/lesson2/
 vagrant up 
 vagrant ssh
-uname -r
 ```
 
-Для запуска VM с шаблоном гостевой ОС Centos 7 с прописанными шагами установки ядра kernel-ml 5-й версии и установкой Virtual Box  Guest Additions (не требуется кастомный образ) выполните:
+Для запуска VM с встроенным скриптом для создания RAID массива и переноса на него ОС выполните:
 
 ```
-cd otus-linux/lesson1/kernel-ml-auto/
+cd otus-linux/lesson2/move/
 vagrant up 
 vagrant ssh
-uname -r
-```
-
-Для запуска VM с шаблоном гостевой ОС Centos 7 с ядром собранным с kernel.org, 5-й версии выполните:
-
-```
-cd otus-linux/lesson1/kernel-source/
-vagrant up 
-vagrant ssh
-uname -r
-```
-
-Для запуска VM с шаблоном гостевой ОС Centos 7 с ядром собранным с kernel.org, 5-й версии, с прописанными шагами установки и сборки ядра (не требуется кастомный образ), выполните (Сборка ядра может занять очень много времени!):
-
-```
-cd otus-linux/lesson1/kernel-source-auto/
-vagrant up 
-vagrant ssh
-uname -r
 ```
 
 
 # Описание выполнения данного задания.
 
-Установка ядра из репозитория kernel-ml
+Создание RAID 10 на Centos и тестирование отказа одного из дисков.
 
 Для запуска виртуального окружения необходимо запустить Vagrantfile из директории https://github.com/mercury131/otus-linux/tree/master/lesson1 
 Это образ чистой Centos 7 . 
@@ -92,506 +69,206 @@ vagrant up
 vagrant ssh clean_Centos
 ```
 
-Проверяем текущую версию ядра:
+Устанавливаем необходимые пакеты:
 
 ```
-uname -r 
+yum install -y mdadm smartmontools hdparm gdisk
 ```
 
-Вывод:
+Создаем партиции на свободных дисках, которые будем использовать под RAID:
 ```
-3.10.0-957.12.2.el7.x86_64
-```
-
-Подключаем репозиторий для установки ядра kernel-ml 5-й версии
-
-```
-sudo yum install -y http://www.elrepo.org/elrepo-release-7.0-3.el7.elrepo.noarch.rpm
+echo -e "n\np\n1\n\n\nw" | fdisk /dev/sdb
+echo -e "n\np\n1\n\n\nw" | fdisk /dev/sdc
+echo -e "n\np\n1\n\n\nw" | fdisk /dev/sdd
+echo -e "n\np\n1\n\n\nw" | fdisk /dev/sde
+echo -e "n\np\n1\n\n\nw" | fdisk /dev/sdf 
 ```
 
-Устанавливаем ядро kernel-ml последней доступной версии в репозитории
-```
-sudo yum --enablerepo elrepo-kernel install kernel-ml -y
-```
-
-После установки ядра, необходимо сконфигурировать загрузчик Grub2,чтобы при загрузке ОС использовалось новое ядро.
-
-Выполняем обновление конфигурации загрузчика
+Создаем RAID 10 и дожидаемся его синхронизации:
 
 ```
-sudo grub2-mkconfig -o /boot/grub2/grub.cfg
+mdadm --create --verbose /dev/md0 --level=10 --raid-devices=4 /dev/sd[bcde]1
+mdadm --detail /dev/md0
 ```
 
-Выставляем загрузку нового ядра по умолчанию:
-
+Теперь повредим один из дисков в RAID массиве
 ```
-sudo grub2-set-default 0
-```
-
-Перезагружаем виртуальную машину и проверяем версию ядра:
-
-```
-sudo reboot
-uname -r 
+echo -e "d\nw" | fdisk /dev/sdd
+partprobe
 ```
 
-Вывод:
-```
-5.3.8-1.el7.elrepo.x86_64
-```
-
-Теперь перейдем к процедуре создания образа с уже установленным ml ядром с помощью утилиты Packer
-
-
-Во вложенной директории kernel-ml, расположена директория packer, со следующими файлами:
-
-- **centos-7-5-ml.json** - файл содержит описание создаваемого образа (параметры сборки)
-- **scripts** - каталог содержит файлы для установки ядра ml и очистки образа для уменьшения размера при сборке через packer
-- **http** - каталог содержит файл vagrant.ks с описанием процедуры установки ОС из скачанного образа
-
-Переходим в директорию packer и запускаем процесс сборки
+Выполняем замену сбойного диска, удалем его из массива и добавляем новый, свободный диск
 
 ```
-packer build centos-7-5-ml.json
+mdadm /dev/md0 -r -f /dev/sdd1
+mdadm /dev/md0 -a /dev/sdf1
 ```
 
-Далее протестируем собранный образ с помощью Vagrant.
-
-Импортируем образ в vagrant, имя образа указываем centos-7-5-ml
+Проверяем стастус массива и дожидаемся синхронизации:
 
 ```
-vagrant box add --name centos-7-5-ml centos-7.7.1908-kernel-5-x86_64-Minimal.box
+mdadm --detail /dev/md0
 ```
 
-Проверяем что импортированный образ появился в списке:
+Теперь создадим GPT раздел и 5 партиций :
 
 ```
-vagrant box list
+parted /dev/md0 mklabel gpt
+parted /dev/md0 mkpart primary 0% 10%
+parted /dev/md0 mkpart primary 10% 20%
+parted /dev/md0 mkpart primary 20% 30%
+parted /dev/md0 mkpart primary 30% 40%
+parted /dev/md0 mkpart primary 40% 50%
 ```
 
-Вывод:
+Проверяем созданные партиции:
 ```
-centos-7-5-ml (virtualbox, 0)
-centos/7      (virtualbox, 1905.1)
-```
-
-Теперь создадим папку test и инициализируем в ней новый vagrantfile
-
-```
-mkdir test
-cd test
-vagrant init centos-7-5-ml
+parted /dev/md0 print
 ```
 
-Запускаем виртуальную машину и проверяем что образ содержит новое ядро
+
+
+Теперь перейдем к процедуре создания RAID 1 и перенесем на него ОС
+
+Для запуска виртуального окружения необходимо запустить Vagrantfile из директории https://github.com/mercury131/otus-linux/tree/master/lesson1 
+Это образ чистой Centos 7 . 
 
 ```
-vagrant up
-vagrant ssh  
+vagrant up 
 ```
 
-Вывод:
+Далее подключиться по ssh к виртуальной машине:
 
 ```
-5.3.8-1.el7.elrepo.x86_64
+vagrant ssh clean_Centos
 ```
 
-Удаляем виртуальную машину после проверки и ее образ из локального хранилища:
+
+Устанавливаем необходимые пакеты
 
 ```
-vagrant destroy
-vagrant box remove centos-7-5-ml
+yum install -y mdadm smartmontools hdparm gdisk
 ```
 
-Далее регистрируемся на Vagrant Cloud, для дальнейшей публикации образа.
-
-Подключаемся к облаку:
+Создаем партиции
 
 ```
-vagrant cloud auth login
+echo -e "n\np\n1\n\n\nw" | fdisk /dev/sdb
+echo -e "n\np\n1\n\n\nw" | fdisk /dev/sdc
 ```
 
-Теперь публикуем собранный ранее образ, делаем это из директории packer:
+Создаем RAID 1:
 
-vagrant cloud publish --release mercury131/centos-7-5-ml 1.0 virtualbox \
-        centos-7.7.1908-kernel-5-x86_64-Minimal.box
+```
+mdadm --create --verbose /dev/md0 --level=1 --raid-devices=2 /dev/sd[bc]1
+```
+
+ПРоверяем что массив работает и синхронизировался:
+```
+mdadm --detail /dev/md0
+```
+
+Создаем раздел на RAID массиве
+
+```
+echo -e "n\np\n1\n\n\nw" | fdisk /dev/md0
+```
+
+Форматируем созданный раздел в файловую систему xfs
+
+```
+mkfs.xfs /dev/md0p1
+```
+
+Подключаем созданный раздел:
+
+```
+mount /dev/md0p1 /mnt/
+```
+
+Клонируем текущую систему в подключенный раздел:
+
+```
+rsync -axu / /mnt/
+```
+
+Теперь подключаем в /mnt следующие каталоги: /proc /dev /sys /run , это необходимо чтобы выполнить chroot в склонированную систему.
+
+```
+mount --bind /proc /mnt/proc && mount --bind /dev /mnt/dev && mount --bind /sys /mnt/sys && mount --bind /run /mnt/run
+```
+
+Выполняем chroot в склонированную систему:
+
+```
+chroot /mnt/
+```
 		
-Вывод после успешной публикации:
+Внутри смонтированной системы выполним смену UUID в /etc/fstab, чтобы склонированная ОС загружалась с RAID массива
 
 ```
-Complete! Published mercury131/centos-7-5-ml
-tag:             mercury131/centos-7-5-ml
-username:        mercury131
-name:            centos-7-5-ml
-private:         false
-downloads:       0
-created_at:      2019-11-02T09:13:47.381Z
-updated_at:      2019-11-02T09:18:42.452Z
-current_version: 1.0
-providers:       virtualbox
-old_versions:    ...
+newid1=$(blkid /dev/md0p1 -s UUID -o value) && oldid1=$(blkid /dev/sda1 -s UUID -o value) && sed -i "s/$oldid1/$newid1/g" /etc/fstab
 ```
 
-Теперь подготовим vagrantfile для запуска данного образа, переходим в директорию otus-linux/lesson1/kernel-ml и выполняем:
+Создаем конфигурацию существующего RAID массива:
 
 ```
-vagrant init mercury131/centos-7-5-ml
-vagrant up
+mdadm --detail --scan > /etc/mdadm.conf
 ```
 
-Созданный образ успешно запущен. 
+Теперь создадим новый initramfs
 
-Теперь перейдем ко второй части, а именн к сборке ядра linux из исходников.
-
-из директории запустим vagrantfile с чистой Centos 7 и подключимся к ней по ssh
-
-```
-vagrant up
-vagrant ssh
-```
-
-Проверяем текущую версию ядра:
-
-```
-uname -r 
-```
-
-Вывод:
-```
-3.10.0-957.12.2.el7.x86_64
-```
-
-Установим пакеты необходимые для сборки:
-
-```
-sudo yum install ncurses-devel make gcc bc openssl-devel elfutils-libelf-devel rpm-build wget flex bison -y
-```
-
-Далее перейдем на https://www.kernel.org/ и выберем самую последнюю, стабильную версию ядра - 5.3.8
-
-Возвращаемся в виртуальную машину и скачиваем исходники утилитой wget:
-
-```
-wget https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-5.3.8.tar.xz
-```
-
-Распаковываем архив и переходим в каталог с ядром
-
-```
-tar xvf linux-5.3.8.tar.xz
-cd linux-5.3.8
-```
-
-Далее копируем конфиг файл текущего ядра в каталог с исходниками нового ядра:
-
-```
-sudo cp -v /boot/config-`uname -r` .config
-```
-
-Запустим утилиту menuconfig, для включения/отключения модулей/опций ядра:
-
-```
-make menuconfig
-```
-
-в качестве примера я добавил поддержку raiserfs
-
-Запускаем процесс компиляции ядра:
-
-```
-make rpm-pkg
-```
-
-После сборки ядра установим скомпилированное ядро, для этого установим полученные rpm пакеты:
-
-```
-sudo rpm -iUv ~/rpmbuild/RPMS/x86_64/*.rpm
-```
-
-Перезагружаемся после установки и проверяем используемую версию ядра:
-
-```
-sudo reboot
-uname -r 
-```
-
-Вывод:
-
-```
-[vagrant@localhost ~]$ uname -r
-5.3.8
-
-```
-
-
-
-Теперь перейдем к процедуре создания образа с уже собранным и установленным ядром linux с помощью утилиты Packer
-
-
-Во вложенной директории kernel-source, расположена директория packer, со следующими файлами:
-
-- **centos-7-5-src.json** - файл содержит описание создаваемого образа (параметры сборки)
-- **scripts** - каталог содержит файлы для сборки и установки ядра Linux и очистки образа для уменьшения размера при сборке через packer
-- **http** - каталог содержит файл vagrant.ks с описанием процедуры установки ОС из скачанного образа
-
-Переходим в директорию packer и запускаем процесс сборки
-
-```
-packer build centos-7-5-src.json
-```
-
-Далее протестируем собранный образ с помощью Vagrant.
-
-Импортируем образ в vagrant, имя образа указываем centos-7-5-src
-
 ```
-vagrant box add --name centos-7-5-src centos-7.7.1908-src-kernel-5-x86_64-Minimal.box
+mv /boot/initramfs-$(uname -r).img /boot/initramfs-$(uname -r).img.bak && dracut /boot/initramfs-$(uname -r).img $(uname -r)
 ```
 
-Проверяем что импортированный образ появился в списке:
+Далее, добавим в GRUB опцию ядра rd.auto, чтобы он мог автоматически обнаружить RAID:
 
 ```
-vagrant box list
+sed -i "s/crashkernel=auto/crashkernel=auto rd.auto=1/g" /etc/default/grub
 ```
 
-Вывод:
+Формируем новый Grub конфиг и выполняем установку загрузчика на один из дисков RAID массива:
 ```
-centos-7-5-src (virtualbox, 0)
-centos/7      (virtualbox, 1905.1)
+grub2-mkconfig -o /boot/grub2/grub.cfg && grub2-install /dev/sdb
 ```
 
-Теперь создадим папку test и инициализируем в ней новый vagrantfile
+Далее необходимо выполнить relabel файлов в новой ОС, иначе SElinux не позволит авторизоваться в склонированную ОС:
 
 ```
-mkdir test
-cd test
-vagrant init centos-7-5-src
+fixfiles restore
 ```
 
-Запускаем виртуальную машину и проверяем что образ содержит новое ядро
+Теперь можно удалить раздел с текущей системы:
 
 ```
-vagrant up
-vagrant ssh  
-uname -r 
+echo -e "d\nw" | fdisk /dev/sda
 ```
 
-Вывод:
+Выходим из chroot и перезагружаемся:
 
 ```
-[vagrant@localhost ~]$ uname -r
-5.3.8
-
-```
-
-Удаляем виртуальную машину после проверки и ее образ из локального хранилища:
-
-```
-vagrant destroy
-vagrant box remove centos-7-5-src
-```
-
-Далее регистрируемся на Vagrant Cloud, для дальнейшей публикации образа.
-
-Подключаемся к облаку:
-
-```
-vagrant cloud auth login
-```
-
-Теперь публикуем собранный ранее образ, делаем это из директории packer:
-
-vagrant cloud publish --release mercury131/centos-7-5-src 1.0 virtualbox \
-        centos-7.7.1908-src-kernel-5-x86_64-Minimal.box
-		
-Вывод после успешной публикации:
-
-```
-Complete! Published mercury131/centos-7-5-src
-tag:             mercury131/centos-7-5-src
-username:        mercury131
-name:            centos-7-5-src
-private:         false
-downloads:       0
-created_at:      2019-11-03T08:35:29.589Z
-updated_at:      2019-11-03T09:23:20.241Z
-current_version: 1.0
-providers:       virtualbox
-old_versions:    ...
-
-```
-
-Теперь подготовим vagrantfile для запуска данного образа, переходим в директорию otus-linux/lesson1/kernel-source и выполняем:
-
-```
-vagrant init mercury131/centos-7-5-src
-vagrant up
-```
-
-Созданный образ успешно запущен. 
-
-
-
-Теперь подготовим Vagrant файлы для запуска базового образа Centos 7 с shell скриптами после запуска, это позволит использовать базовый образ ОС и кастомизировать ее после запуска.
-Таким образом мы можем не использовать кастомные образы, которые создали ранее.
-
-Создадим Vagrantfile для использования Centos c 5-й версией ядра ml.
-
-Создаем каталог kernel-ml-auto т переходим в него:
-
-```
-cd ..
-mkdir kernel-ml-auto
-cd kernel-ml-auto
-```
-
-Инициализируем Vagrantfile с базовой Centos 7
-
-vagrant init centos/7
-
-Установим плагин vagrant reload, для повторной инициализации VM после перезагрузки:
-
-```
-vagrant plugin install vagrant-reload
-```
-
-теперь отредактируем vagrantfile, добавив изменение конфигурации VM (cpu/ram/name) и выполнение кастомных скриптов после запуска, в том числе установим Virtual Box  Guest Additions:
-
-```
-    config.vm.define "Centos7-5-ml-kernel"
-    config.vm.provider :virtualbox do |vb|
-        vb.name = "Centos7-5-ml-kernel"
-	vb.cpus = "2"
-	vb.memory = "2048"
-    end
-
-	config.vm.provision "shell", inline: <<-SHELL
-		echo Start provisioning...
-		# Install elrepo
-		yum install -y http://www.elrepo.org/elrepo-release-7.0-3.el7.elrepo.noarch.rpm
-		# Install new kernel
-		yum --enablerepo elrepo-kernel install kernel-ml kernel-ml-devel kernel-ml-headers -y
-		# Remove older kernels
-		rm -f /boot/*3.10*
-		# Update GRUB
-		grub2-mkconfig -o /boot/grub2/grub.cfg
-		grub2-set-default 0
-		echo "Grub update done."
-		shutdown -r now
-		# Reboot VM
-		shutdown -r now
-	 SHELL
-	 
-	 config.vm.provision :reload
-	 
-	 	config.vm.provision "shell", inline: <<-SHELL
-		echo Start provisioning...
-		echo "Install Virtual Box Guest Additions"
-		VBOX_VERSION=6.0.14
-		yum install elfutils-libelf-devel -y
-		rpm -Uvh http://download-ib01.fedoraproject.org/pub/epel/7/x86_64/Packages/d/dkms-2.7.1-1.el7.noarch.rpm
-		yum -y install --enablerepo elrepo-kernel  wget perl gcc dkms  make bzip2
-		wget http://download.virtualbox.org/virtualbox/${VBOX_VERSION}/VBoxGuestAdditions_${VBOX_VERSION}.iso
-		mkdir /media/VBoxGuestAdditions
-		mount -o loop,ro VBoxGuestAdditions_${VBOX_VERSION}.iso /media/VBoxGuestAdditions
-		sh /media/VBoxGuestAdditions/VBoxLinuxAdditions.run
-		rm -f VBoxGuestAdditions_${VBOX_VERSION}.iso
-		umount /media/VBoxGuestAdditions
-		rmdir /media/VBoxGuestAdditions
-		unset VBOX_VERSION
-		# Reboot VM
-		shutdown -r now
-	 SHELL
-```
-
-Запускам виртуальную машину и проверяем версию ядра:
-
-```
-vagrant up
-vagrant ssh
-uname -r
-```
-
-Версия будет:
-
-```
-[vagrant@localhost ~]$ uname -r
-5.3.8-1.el7.elrepo.x86_64
+exit
+shutdown -r now
 ```
 
-Проверяем запущенные VBoxGuestAdditions:
+Загрузившись в ОС, проверяем что она установлена на RAID массиве:
 
 ```
-[vagrant@localhost ~]$ systemctl status vboxadd
-● vboxadd.service
-   Loaded: loaded (/opt/VBoxGuestAdditions-6.0.14/init/vboxadd; enabled; vendor preset: disabled)
-   Active: active (exited) since Sun 2019-11-03 11:59:44 UTC; 29s ago
-  Process: 1407 ExecStart=/opt/VBoxGuestAdditions-6.0.14/init/vboxadd start (code=exited, status=0/SUCCESS)
- Main PID: 1407 (code=exited, status=0/SUCCESS)
-   CGroup: /system.slice/vboxadd.service
-[vagrant@localhost ~]$
-
-```
-
-Теперь по аналогии создадим Vagrantfile для использования Centos c 5-й версией собранного ядра linux из исходников.
-
-Создаем каталог kernel-source-auto и переходим в него:
-
-```
-cd ..
-mkdir kernel-source-auto
-cd kernel-source-auto
-```
-
-Устанавливаем плагин для изменения размеров диска
-
-```
-vagrant plugin install vagrant-disksize
+df -h
+lsblk
 ```
-
-Инициализируем Vagrantfile с базовой Centos 7
-
-vagrant init centos/7
 
-теперь отредактируем vagrantfile, добавив изменение конфигурации VM (cpu/ram/name) и выполнение кастомных скриптов после запуска:
+Добавим диск, где была изначально установлена ОС в RAID массив как spare диск:
 
 ```
-	config.disksize.size = '50GB'
-    config.vm.define "Centos7-5-src-kernel"
-    config.vm.provider :virtualbox do |vb|
-        vb.name = "Centos7-5-src-kernel"
-	vb.cpus = "4"
-	vb.memory = "4096"
-    end
-
-	config.vm.provision "shell", inline: <<-SHELL
-		echo Start provisioning...
-		# Install packages
-		yum install ncurses-devel make gcc bc openssl-devel elfutils-libelf-devel rpm-build wget flex bison rsync -y
-		# Install new kernel
-		wget https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-5.3.8.tar.xz
-		tar xvf linux-5.3.8.tar.xz
-		cd linux-5.3.8
-		cp -v /boot/config-`uname -r` .config
-		yes "" | make oldconfig
-		make rpm-pkg
-		rpm -iUv ~/rpmbuild/RPMS/x86_64/*.rpm
-		# Reboot VM
-		shutdown -r now
-	 SHELL
+mdadm --add /dev/md0 /dev/sda
 ```
 
-Запускам виртуальную машину и проверяем версию ядра:
+Проверяем стастус RAID массива
 
 ```
-vagrant up
-vagrant ssh
-uname -r
+mdadm --detail /dev/md0
 ```
-
-Версия будет:
 
-```
-[vagrant@localhost ~]$ uname -r
-5.3.8
-```
+Перенос ОС на RAID массив завершен.

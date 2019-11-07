@@ -56,9 +56,18 @@ config.vm.synced_folder '.', '/vagrant', disabled: true
                   end
           end
 		  
- 	  box.vm.provision "shell", inline: <<-SHELL
+
+	  
+
+
+      end
+  end
+  
+  ####
+   	  config.vm.provision "shell", inline: <<-SHELL
 	      mkdir -p ~root/.ssh
               cp ~vagrant/.ssh/auth* ~root/.ssh
+		  lsblk 
 		  echo "Install required software"
 	      yum install -y mdadm smartmontools hdparm gdisk
 		  echo "Create partitions on disks /dev/sd[bc]"
@@ -83,34 +92,38 @@ config.vm.synced_folder '.', '/vagrant', disabled: true
 		  echo "Mount /proc /dev /sys /run to /mnt/"
 		  mount --bind /proc /mnt/proc && mount --bind /dev /mnt/dev && mount --bind /sys /mnt/sys && mount --bind /run /mnt/run
 		  #chroot /mnt/
+		  echo "Change UUID in fstab"
 		  chroot /mnt/ /bin/bash -c 'newid1=$(blkid /dev/md0p1 -s UUID -o value) && oldid1=$(blkid /dev/sda1 -s UUID -o value) && sed -i "s/$oldid1/$newid1/g" /etc/fstab'
-		 chroot /mnt/ /bin/bash -c 'mdadm --detail --scan > /etc/mdadm.conf'
+		  echo "Create current madm config"
+		  chroot /mnt/ /bin/bash -c 'mdadm --detail --scan > /etc/mdadm.conf'
+		  echo "Create new initramfs image"
 		  chroot /mnt/ /bin/bash -c 'mv /boot/initramfs-$(uname -r).img /boot/initramfs-$(uname -r).img.bak && dracut /boot/initramfs-$(uname -r).img $(uname -r)'
+		  echo "Add rd.auto kernel option to Grub"
 		  chroot /mnt/ /bin/bash -c 'sed -i "s/crashkernel=auto/crashkernel=auto rd.auto=1/g" /etc/default/grub'
+		  echo "Generate new Grub config and install grub to one of RAID disk"
 		  chroot /mnt/ /bin/bash -c 'grub2-mkconfig -o /boot/grub2/grub.cfg && grub2-install /dev/sdb'
 		  #echo -e "y" | fixfiles relabel
+		  echo "Start relabel job for SElinux in new system"
 		  chroot /mnt/ /bin/bash -c 'fixfiles restore'
 		  chroot /mnt/ /bin/bash -c "grub2-mkconfig -o /boot/grub2/grub.cfg && grub2-install /dev/sda"
+		  echo "Remove partition on disk with current running system"
 		  chroot /mnt/ /bin/bash -c 'echo -e "d\nw" | fdisk /dev/sda'
-		  #exit
+		  echo "Reboot to new cloned OS"
 		  shutdown -r now
-		  #dd if=/dev/sda of=/dev/md0 conv=noerror
-		  #parted /dev/md0 print
 
   	  SHELL
 	  
-	  	 box.vm.provision :reload
+	  	 config.vm.provision :reload
 	 
-	 	box.vm.provision "shell", inline: <<-SHELL
+	 	config.vm.provision "shell", inline: <<-SHELL
 		echo Start provisioning...
+		echo "Add old system disk to RAID as spare"
 		mdadm --add /dev/md0 /dev/sda
 		mdadm --detail /dev/md0
+		echo "Chech where is current runnigg system"
 		df -h
+		lsblk
 	 SHELL
-	  
-
-
-      end
-  end
+  ####
 end
 
