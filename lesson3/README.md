@@ -55,7 +55,7 @@ vagrant ssh
 
 Создание RAID 10 на Centos и тестирование отказа одного из дисков.
 
-Для запуска виртуального окружения необходимо запустить Vagrantfile из директории https://github.com/mercury131/otus-linux/tree/master/lesson2/move 
+Для запуска виртуального окружения необходимо запустить Vagrantfile из директории https://github.com/mercury131/otus-linux/tree/master/lesson1 
 Это образ чистой Centos 7 . 
 
 ```
