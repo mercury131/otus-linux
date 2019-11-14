@@ -113,8 +113,7 @@ config.vm.synced_folder '.', '/vagrant', disabled: true
 
   	  SHELL
 	  
-	  	 config.vm.provision :reload
-	 
+	  	config.vm.provision :reload
 	 	config.vm.provision "shell", inline: <<-SHELL
 		echo Start provisioning...
 		echo "Add old system disk to RAID as spare"

@@ -3,32 +3,33 @@
 
 MACHINES = {
   :testlvm => {
-        :box_name => "mercury131/centos-7-5-lvm",
+        :box_name => "centos/7",
+		:box_version => "1804.02",
         :ip_addr => '192.168.11.101',
 	:disks => {
 		:sata01 => {
 			:dfile => './sata01.vdi',
-			:size => 500,
+			:size => 1000,
 			:port => 1
 		},
 		:sata02 => {
                         :dfile => './sata02.vdi',
-                        :size => 500, # Megabytes
+                        :size => 1000, # Megabytes
 			:port => 2
 		},
                 :sata03 => {
                         :dfile => './sata03.vdi',
-                        :size => 500,
+                        :size => 1000,
                         :port => 3
                 },
                 :sata04 => {
                         :dfile => './sata04.vdi',
-                        :size => 500, # Megabytes
+                        :size => 1000, # Megabytes
                         :port => 4
                 },
                 :sata05 => {
                         :dfile => './sata05.vdi',
-                        :size => 500, # Megabytes
+                        :size => 1000, # Megabytes
                         :port => 5
                 }
 
@@ -39,6 +40,9 @@ MACHINES = {
 }
 
 Vagrant.configure("2") do |config|
+
+config.vm.box_version = "1804.02"
+config.vm.synced_folder '.', '/vagrant', disabled: true
 
   MACHINES.each do |boxname, boxconfig|
 
@@ -61,25 +65,140 @@ Vagrant.configure("2") do |config|
                           end
 
 		  end
-
+                  if needsController == true
+                     vb.customize ["storagectl", :id, "--name", "SATA", "--add", "sata" ]
                      boxconfig[:disks].each do |dname, dconf|
                          vb.customize ['storageattach', :id,  '--storagectl', 'SATA', '--port', dconf[:port], '--device', 0, '--type', 'hdd', '--medium', dconf[:dfile]]
                      end
-
+                  end
           end
 		  
- 	  box.vm.provision "shell", inline: <<-SHELL
-	      mkdir -p ~root/.ssh
-              cp ~vagrant/.ssh/auth* ~root/.ssh
-		  echo "Install required software"
-		  yum install system-storage-manager -y
 
-
-  	  SHELL
 	  
 
 
       end
   end
+  
+   	  config.vm.provision "shell", inline: <<-SHELL
+	      mkdir -p ~root/.ssh
+              cp ~vagrant/.ssh/auth* ~root/.ssh
+		  yum install xfsdump -y
+		  pwd
+		  cd /
+		  pwd
+		  echo "add PV for Home VG"
+		  pvcreate /dev/sdc 
+		  echo "Create Home VG"
+		  vgcreate vghome /dev/sdc
+		  echo "Create Home LV"
+		  lvcreate -n home -l 50%FREE vghome
+		  echo "Create FS and mount it"
+		  mkfs.xfs /dev/vghome/home
+		  mount /dev/vghome/home /mnt
+		  echo "Create /home copy"
+		  rsync -axu /home/ /mnt/
+		  ls /mnt
+		  umount /mnt/
+		  echo "Create mount point in fstab"
+		  echo "/dev/vghome/home /home                    xfs    defaults        0 2" >> /etc/fstab
+		  echo " " >> /etc/fstab
+		  echo "Remove old home and mount new home"
+		  rm -rf /home/*
+		  mount /dev/vghome/home
+		  chmod 700 /home/vagrant/.ssh
+		  chmod 600 /home/vagrant/.ssh/authorized_keys
+		  fixfiles restore
+		  df -h
+		  echo "Create test files"
+		  touch /home/test1
+		  touch /home/test2
+		  ls /home/
+		  echo "Create home Snapshot"
+		  lvcreate -n home_snap -l 10%FREE -s /dev/vghome/home
+		  lvs
+		  echo "Delete created files in home"
+		  rm -f /home/test1
+		  rm -f /home/test2
+		  ls /home/
+		  echo "Restore to snapshot"
+		  umount /dev/vghome/home
+		  lvconvert --merge /dev/vghome/home_snap
+		  mount /dev/vghome/home
+		  ls /home/
+		  
+		  cd /
+		  echo "add PV for VAR VG"
+		  pvcreate /dev/sdd /dev/sde
+		  echo "Create VAR VG"
+		  vgcreate vgvar /dev/sdd /dev/sde
+		  echo "Create VAR LV (Mirror)"
+		  lvcreate -n var -l 100%FREE vgvar -m1
+		  echo "Create FS and mount it"
+		  mkfs.ext4 /dev/vgvar/var
+		  mount /dev/vgvar/var /mnt
+		  echo "Create /var copy"
+		  ls /mnt/
+		  rsync -axu /var/ /mnt/
+		  pwd
+	      fixfiles restore
+		  ls /mnt
+		  umount /mnt/
+		  echo "Create mount point in fstab"
+		  echo "/dev/vgvar/var /var                    ext4    defaults        0 2" >> /etc/fstab
+		  echo " " >> /etc/fstab
+		  echo "Remove old var and mount new var"
+		  systemctl stop nfs-client.target
+		  rm -rf /var/*
+		  mount /dev/vgvar/var
+		  df -h
+		  
+		  echo "Create btrfs for /opt"
+		  mkfs.btrfs /dev/sdf
+		  echo "Create mount point in fstab"
+		  echo "/dev/sdf /opt                    btrfs    defaults        0 0" >> /etc/fstab
+		  echo " " >> /etc/fstab
+		  mount /opt
+		  df -Th
+		  echo "create subvolume"
+		  btrfs subvolume create /opt/test1
+		  echo "Create test files"
+		  touch /opt/test1/1
+		  touch /opt/test1/2
+		  touch /opt/test1/3
+		  ls /opt/test1/
+		  echo "Create Snapshot"
+		  btrfs subvolume snapshot /opt/test1 /opt/test1/snapshot
+		  ls /opt/test1/snapshot/
+		  
+		  echo "Create PV for new root"
+		  pvcreate /dev/sdb
+		  vgdisplay
+		  echo "Extend current VolGroup00"
+		  vgextend VolGroup00 /dev/sdb
+		  vgdisplay
+		  echo "Create New root LV"
+		  lvcreate -n newroot -l 100%FREE VolGroup00
+		  lvdisplay
+		  echo "Create FS on new LV"
+		  mkfs.xfs /dev/VolGroup00/newroot
+		  echo "Mount created FS"
+		  mount /dev/VolGroup00/newroot /mnt/
+		  echo "DUMP and Restore current root to new FS"
+		  xfsdump -J  - / | xfsrestore -J - /mnt
+		  echo "Umount cloned root"
+		  umount /mnt/
+		  echo "Rename LV "
+		  lvrename /dev/VolGroup00/LogVol00 oldroot
+		  lvrename /dev/VolGroup00/newroot LogVol00
+		  shutdown -r now
+		  #echo 1 | xfsdump -l 0 -L "root backup" -f /dev/sdb /
+		  
+
+	      
+  	  SHELL
+	  
+  ####
+  
 end
 
