@@ -4,21 +4,27 @@
 - **VirtualBox** - ПО для создания виртуальных окружений
 - **Vagrant** - ПО для конфигурирования/шаблонизирования виртуальных машин
 - **Git** - система контроля версий
+- **LVM** - Менеджер логических томов
 
 
 Используемые репозитории:
 - **https://github.com/mercury131/otus-linux** - репозиторий для выполнения домашних заданий OTUS
-- **https://github.com/mercury131/otus-linux/tree/master/lesson2** - ссылка на данное домашнее задание
+- **https://github.com/mercury131/otus-linux/tree/master/lesson3** - ссылка на данное домашнее задание
 
 В рамках данного домашнего задания выполнено:
-- **Создание Vagrantfile с встроенным скриптом для создания и тестирования отказа RAID массива** 
-- **Создание Vagrantfile с встроенным скриптом для создания RAID массива и переноса на него ОС** 
+- **Создание Vagrantfile с встроенным скриптом для создания и тестирования LMV** 
 - **Описаны шаги выполнения данного задания** 
 
 Используемые файлы и директории:
-- Во директории lesson2 расположен Vagrantfile с встроенным скриптом для создания и тестирования отказа RAID массива
-- Во вложенной директории move расположен Vagrantfile с встроенным скриптом для создания RAID массива и переноса на него ОС
+- Во директории lesson3 расположен Vagrantfile с встроенным скриптом для создания и тестирования LVM
 
+Vagrantfile выполняет следующие действия:
+- уменьшает том /dev/mapper/VolGroup00-LogVol00 до 8 GB
+- выделяет отдельный том под /home
+- выделяет отдельный том под /var в режиме mirror
+- создает снапшоты в /home
+- создает снапшоты в /home, восстанавливается с них
+- создает файловую систему btrfs для /opt и создает subvolume
 
 # Как проверить домашнее задание?
 
@@ -34,18 +40,10 @@ git clone git@github.com:mercury131/otus-linux.git
 vagrant plugin install vagrant-reload
 ```
 
-Для запуска VM с встроенным скриптом для создания и тестирования отказа RAID массива выполните:
+Для запуска VM с встроенным скриптом выполните:
 
 ```
-cd otus-linux/lesson2/
-vagrant up 
-vagrant ssh
-```
-
-Для запуска VM с встроенным скриптом для создания RAID массива и переноса на него ОС выполните:
-
-```
-cd otus-linux/lesson2/move/
+cd otus-linux/lesson3/
 vagrant up 
 vagrant ssh
 ```
@@ -53,10 +51,9 @@ vagrant ssh
 
 # Описание выполнения данного задания.
 
-Создание RAID 10 на Centos и тестирование отказа одного из дисков.
+Тестирование LVM
 
-Для запуска виртуального окружения необходимо запустить Vagrantfile из директории https://github.com/mercury131/otus-linux/tree/master/lesson1 
-Это образ чистой Centos 7 . 
+Для запуска виртуального окружения необходимо запустить Vagrantfile из директории https://github.com/mercury131/otus-linux/tree/master/lesson3 
 
 ```
 vagrant up 
@@ -65,209 +62,255 @@ vagrant up
 Далее подключиться по ssh к виртуальной машине:
 
 ```
-vagrant ssh clean_Centos
+vagrant ssh
 ```
 
 Устанавливаем необходимые пакеты:
 
 ```
-yum install -y mdadm smartmontools hdparm gdisk
+yum install xfsdump -y
 ```
 
-Создаем партиции на свободных дисках, которые будем использовать под RAID:
+Создаем PV для /home VG
 ```
-echo -e "n\np\n1\n\n\nw" | fdisk /dev/sdb
-echo -e "n\np\n1\n\n\nw" | fdisk /dev/sdc
-echo -e "n\np\n1\n\n\nw" | fdisk /dev/sdd
-echo -e "n\np\n1\n\n\nw" | fdisk /dev/sde
-echo -e "n\np\n1\n\n\nw" | fdisk /dev/sdf 
+pvcreate /dev/sdc  
 ```
 
-Создаем RAID 10 и дожидаемся его синхронизации:
+Создаем VG для /home
 
 ```
-mdadm --create --verbose /dev/md0 --level=10 --raid-devices=4 /dev/sd[bcde]1
-mdadm --detail /dev/md0
+vgcreate vghome /dev/sdc
 ```
 
-Теперь повредим один из дисков в RAID массиве
+Создаем LV для /home
 ```
-echo -e "d\nw" | fdisk /dev/sdd
-partprobe
-```
-
-Выполняем замену сбойного диска, удалем его из массива и добавляем новый, свободный диск
-
-```
-mdadm /dev/md0 -r -f /dev/sdd1
-mdadm /dev/md0 -a /dev/sdf1
+lvcreate -n home -l 50%FREE vghome
 ```
 
-Проверяем стастус массива и дожидаемся синхронизации:
+Создаем файловую систему xfs на созданном LVM разделе и монтируем его
 
 ```
-mdadm --detail /dev/md0
+mkfs.xfs /dev/vghome/home
+mount /dev/vghome/home /mnt
 ```
 
-Теперь создадим GPT раздел и 5 партиций :
+клонируем файлы из /home/ в /mnt/:
 
 ```
-parted /dev/md0 mklabel gpt
-parted /dev/md0 mkpart primary 0% 10%
-parted /dev/md0 mkpart primary 10% 20%
-parted /dev/md0 mkpart primary 20% 30%
-parted /dev/md0 mkpart primary 30% 40%
-parted /dev/md0 mkpart primary 40% 50%
+rsync -axu /home/ /mnt/
 ```
 
-Проверяем созданные партиции:
-```
-parted /dev/md0 print
-```
-
-
-
-Теперь перейдем к процедуре создания RAID 1 и перенесем на него ОС
-
-Для запуска виртуального окружения необходимо запустить Vagrantfile из директории https://github.com/mercury131/otus-linux/tree/master/lesson1 
-Это образ чистой Centos 7 . 
+Создаем точку монтирования для нового /home :
 
 ```
-vagrant up 
+umount /mnt/
+echo "/dev/vghome/home /home                    xfs    defaults        0 2" >> /etc/fstab
+echo " " >> /etc/fstab
 ```
 
-Далее подключиться по ssh к виртуальной машине:
-
+Удаляем файлы из старого раздела /home и монтируем новый /home расположенный на LVM, также исправляем права доступа:
 ```
-vagrant ssh clean_Centos
-```
-
-
-Устанавливаем необходимые пакеты
-
-```
-yum install -y mdadm smartmontools hdparm gdisk
-```
-
-Создаем партиции
-
-```
-echo -e "n\np\n1\n\n\nw" | fdisk /dev/sdb
-echo -e "n\np\n1\n\n\nw" | fdisk /dev/sdc
-```
-
-Создаем RAID 1:
-
-```
-mdadm --create --verbose /dev/md0 --level=1 --raid-devices=2 /dev/sd[bc]1
-```
-
-ПРоверяем что массив работает и синхронизировался:
-```
-mdadm --detail /dev/md0
-```
-
-Создаем раздел на RAID массиве
-
-```
-echo -e "n\np\n1\n\n\nw" | fdisk /dev/md0
-```
-
-Форматируем созданный раздел в файловую систему xfs
-
-```
-mkfs.xfs /dev/md0p1
-```
-
-Подключаем созданный раздел:
-
-```
-mount /dev/md0p1 /mnt/
-```
-
-Клонируем текущую систему в подключенный раздел:
-
-```
-rsync -axu / /mnt/
-```
-
-Теперь подключаем в /mnt следующие каталоги: /proc /dev /sys /run , это необходимо чтобы выполнить chroot в склонированную систему.
-
-```
-mount --bind /proc /mnt/proc && mount --bind /dev /mnt/dev && mount --bind /sys /mnt/sys && mount --bind /run /mnt/run
-```
-
-Выполняем chroot в склонированную систему:
-
-```
-chroot /mnt/
-```
-		
-Внутри смонтированной системы выполним смену UUID в /etc/fstab, чтобы склонированная ОС загружалась с RAID массива
-
-```
-newid1=$(blkid /dev/md0p1 -s UUID -o value) && oldid1=$(blkid /dev/sda1 -s UUID -o value) && sed -i "s/$oldid1/$newid1/g" /etc/fstab
-```
-
-Создаем конфигурацию существующего RAID массива:
-
-```
-mdadm --detail --scan > /etc/mdadm.conf
-```
-
-Теперь создадим новый initramfs
-
-```
-mv /boot/initramfs-$(uname -r).img /boot/initramfs-$(uname -r).img.bak && dracut /boot/initramfs-$(uname -r).img $(uname -r)
-```
-
-Далее, добавим в GRUB опцию ядра rd.auto, чтобы он мог автоматически обнаружить RAID:
-
-```
-sed -i "s/crashkernel=auto/crashkernel=auto rd.auto=1/g" /etc/default/grub
-```
-
-Формируем новый Grub конфиг и выполняем установку загрузчика на один из дисков RAID массива:
-```
-grub2-mkconfig -o /boot/grub2/grub.cfg && grub2-install /dev/sdb
-```
-
-Далее необходимо выполнить relabel файлов в новой ОС, иначе SElinux не позволит авторизоваться в склонированную ОС:
-
-```
+rm -rf /home/*
+mount /dev/vghome/home
+chmod 700 /home/vagrant/.ssh
+chmod 600 /home/vagrant/.ssh/authorized_keys
 fixfiles restore
 ```
 
-Теперь можно удалить раздел с текущей системы:
+
+Создаем снапшот LVM и тестируем удаление файлов и восстановление:
 
 ```
-echo -e "d\nw" | fdisk /dev/sda
+touch /home/test1
+touch /home/test2
+ls /home/
+lvcreate -n home_snap -l 10%FREE -s /dev/vghome/home
+lvs
+rm -f /home/test1
+rm -f /home/test2
+ls /home/
+umount /dev/vghome/home
+lvconvert --merge /dev/vghome/home_snap
+mount /dev/vghome/home
+ls /home/
 ```
 
-Выходим из chroot и перезагружаемся:
+
+Далее создадим отдельный LVM для /var
+
+Создаем PV для /var VG
+```
+pvcreate /dev/sdd /dev/sde
+```
+
+Создаем VG для /var
 
 ```
-exit
+vgcreate vgvar /dev/sdd /dev/sde
+```
+
+Создаем LV для /var
+```
+lvcreate -n var -l 100%FREE vgvar -m1
+```
+
+Создаем файловую систему ext4 на созданном LVM разделе и монтируем его
+
+```
+mkfs.ext4 /dev/vgvar/var
+mount /dev/vgvar/var /mnt
+```
+
+клонируем файлы из /var в /mnt/ и делаем relabel для selinux:
+
+```
+rsync -axu /var/ /mnt/
+fixfiles restore
+umount /mnt/
+```
+
+Создаем точку монтирования для нового /home :
+
+```
+umount /mnt/
+echo "/dev/vgvar/var /var                    ext4    defaults        0 2" >> /etc/fstab
+echo " " >> /etc/fstab
+```
+
+Удаляем файлы из старого раздела /home и монтируем новый /home расположенный на LVM, также исправляем права доступа:
+```
+rm -rf /var/*
+mount /dev/vgvar/var
+
+Создадим btrfs для /opt
+
+```
+mkfs.btrfs /dev/sdf
+```
+
+Создадим точку монтирования:
+
+```
+echo "/dev/sdf /opt                    btrfs    defaults        0 0" >> /etc/fstab
+echo " " >> /etc/fstab
+```
+
+Подключаем раздел:
+```
+mount /opt
+```
+
+Создаем subvolume
+
+```
+btrfs subvolume create /opt/test1
+```
+
+Создаем тестовые файлы
+
+```
+touch /opt/test1/1
+touch /opt/test1/2
+touch /opt/test1/3
+ls /opt/test1/
+```
+
+Создаем снапшот:
+
+```
+btrfs subvolume snapshot /opt/test1 /opt/test1/snapshot
+```
+
+Проверяем файлы в снапшоте:
+
+```
+ls /opt/test1/snapshot/
+```
+
+
+Теперь выполним уменьшение корневого раздела, размещенного на LVM и отформатированного в фс xfs
+
+Создаем PV
+
+```
+pvcreate /dev/sdb
+```
+
+Добавляем его в VolGroup00:
+
+```
+vgextend VolGroup00 /dev/sdb
+```
+		
+Создаем новый LVM под новый корневой раздел
+
+```
+lvcreate -n newroot -l 100%FREE VolGroup00
+```
+
+Форматируем новый раздел и подключаем:
+
+```
+mkfs.xfs /dev/VolGroup00/newroot
+mount /dev/VolGroup00/newroot /mnt/
+```
+
+Выполняем резервное копирование xfs текущего корневого раздела на новый, созданный ранее LVM раздел
+
+```
+xfsdump -J  - / | xfsrestore -J - /mnt
+```
+
+Отключаем новый раздел:
+
+```
+umount /mnt/
+```
+
+Переименовываем новый LVM, чтобы GRUB мог успешно загрузить ос с нового раздела:
+```
+lvrename /dev/VolGroup00/LogVol00 oldroot
+lvrename /dev/VolGroup00/newroot LogVol00
+```
+
+Перезагружаемся и проверяем:
+
+```
 shutdown -r now
 ```
 
-Загрузившись в ОС, проверяем что она установлена на RAID массиве:
+Проверяем:
 
 ```
-df -h
 lsblk
+NAME                    MAJ:MIN RM  SIZE RO TYPE MOUNTPOINT
+sda                       8:0    0   40G  0 disk
+├─sda1                    8:1    0    1M  0 part
+├─sda2                    8:2    0    1G  0 part /boot
+└─sda3                    8:3    0   39G  0 part
+  ├─VolGroup00-LogVol01 253:1    0  1.5G  0 lvm  [SWAP]
+  └─VolGroup00-oldroot  253:2    0 37.5G  0 lvm
+sdb                       8:16   0 1000M  0 disk
+└─VolGroup00-LogVol00   253:0    0  992M  0 lvm  /
+sdc                       8:32   0 1000M  0 disk
+└─vghome-home           253:3    0  496M  0 lvm  /home
+sdd                       8:48   0 1000M  0 disk
+├─vgvar-var_rmeta_0     253:4    0    4M  0 lvm
+│ └─vgvar-var           253:8    0  992M  0 lvm  /var
+└─vgvar-var_rimage_0    253:5    0  992M  0 lvm
+  └─vgvar-var           253:8    0  992M  0 lvm  /var
+sde                       8:64   0 1000M  0 disk
+├─vgvar-var_rmeta_1     253:6    0    4M  0 lvm
+│ └─vgvar-var           253:8    0  992M  0 lvm  /var
+└─vgvar-var_rimage_1    253:7    0  992M  0 lvm
+  └─vgvar-var           253:8    0  992M  0 lvm  /var
+sdf                       8:80   0 1000M  0 disk /opt
+
 ```
 
-Добавим диск, где была изначально установлена ОС в RAID массив как spare диск:
+Удаляем старый LVM:
 
 ```
-mdadm --add /dev/md0 /dev/sda
+lvremove /dev/VolGroup00/oldroot
 ```
 
-Проверяем стастус RAID массива
-
-```
-mdadm --detail /dev/md0
-```
-
-Перенос ОС на RAID массив завершен.
