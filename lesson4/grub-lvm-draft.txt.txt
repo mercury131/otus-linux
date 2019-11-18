@@ -3,7 +3,7 @@
 Устанавливаем пропатченный grub
 
 ```
-yum remove grub2*
+yum remove grub2* -y
 rpm -i https://yum.rumyantsev.com/centos/7/x86_64/grub2-common-2.02-0.76.el7.noarch.rpm && rpm -i https://yum.rumyantsev.com/centos/7/x86_64/grub2-pc-modules-2.02-0.76.el7.noarch.rpm && rpm -i https://yum.rumyantsev.com/centos/7/x86_64/grub2-tools-minimal-2.02-0.76.el7.x86_64.rpm && rpm -i https://yum.rumyantsev.com/centos/7/x86_64/grub2-tools-2.02-0.76.el7.x86_64.rpm && rpm -i https://yum.rumyantsev.com/centos/7/x86_64/grub2-tools-extra-2.02-0.76.el7.x86_64.rpm && rpm -i https://yum.rumyantsev.com/centos/7/x86_64/grub2-pc-2.02-0.76.el7.x86_64.rpm  && rpm -i https://yum.rumyantsev.com/centos/7/x86_64/grub2-2.02-0.76.el7.x86_64.rpm 
 ```
 
@@ -29,16 +29,10 @@ rpm -i https://yum.rumyantsev.com/centos/7/x86_64/grub2-common-2.02-0.76.el7.noa
   Logical volume "grub2" created.
 ```
 
-Создаем партицию
-
-```
-echo -e "n\np\n1\n\n\nw" | fdisk /dev/grub2/grub2
-partprobe
-```
 
 Создаем ФС
 ```
-mkfs.xfs /dev/grub2/grub2p1
+mkfs.xfs /dev/grub2/grub2
 ```
 
 Монтируем ФС
@@ -50,10 +44,8 @@ mount /dev/grub2/grub2 /mnt
 Клонируем файлы из каталога /boot
 
 ```
-yum install rsync
-rsync -axu /boot/ /mnt/
-fixfiles restore
-umount /mnt/
+yum install rsync -y
+rsync -axu /boot/ /mnt/ && fixfiles restore && umount /mnt/
 ```
 
 Меняем точку монтирования /boot в /etc/fstab
@@ -74,5 +66,8 @@ mount /boot
 Устанавливаем GRUB на LVM раздел
 
 ```
-grub2-install --skip-fs-probe /dev/grub2/grub2
+grub2-mkconfig -o /boot/grub2/grub.cfg
+grub2-install --skip-fs-probe /dev/sdb
 ```
+
+Перезагружаемся, в VirtualBox при перезапуске нажимаем f12 и выбираем загрузку со второго диска, убеждаемся что ос успешно загружается.

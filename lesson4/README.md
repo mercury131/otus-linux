@@ -317,3 +317,76 @@ lvdisplay
 
 ```
 
+Теперь настроим загрузку GRUB с LVM раздела
+
+Устанавливаем пропатченный grub
+
+```
+yum remove grub2* -y
+rpm -i https://yum.rumyantsev.com/centos/7/x86_64/grub2-common-2.02-0.76.el7.noarch.rpm && rpm -i https://yum.rumyantsev.com/centos/7/x86_64/grub2-pc-modules-2.02-0.76.el7.noarch.rpm && rpm -i https://yum.rumyantsev.com/centos/7/x86_64/grub2-tools-minimal-2.02-0.76.el7.x86_64.rpm && rpm -i https://yum.rumyantsev.com/centos/7/x86_64/grub2-tools-2.02-0.76.el7.x86_64.rpm && rpm -i https://yum.rumyantsev.com/centos/7/x86_64/grub2-tools-extra-2.02-0.76.el7.x86_64.rpm && rpm -i https://yum.rumyantsev.com/centos/7/x86_64/grub2-pc-2.02-0.76.el7.x86_64.rpm  && rpm -i https://yum.rumyantsev.com/centos/7/x86_64/grub2-2.02-0.76.el7.x86_64.rpm 
+```
+
+Создаем PV
+
+```
+[root@centoslvm ~]# pvcreate --bootloaderareasize 1m  /dev/sdb
+  Physical volume "/dev/sdb" successfully created.
+```
+
+Создаем VG
+
+```
+[root@centoslvm ~]# vgcreate grub2 /dev/sdb
+  Volume group "grub2" successfully created
+
+```
+
+Создаем LVM
+
+```
+[root@centoslvm ~]# lvcreate -n grub2 -l 100%FREE grub2
+  Logical volume "grub2" created.
+```
+
+
+Создаем ФС
+```
+mkfs.xfs /dev/grub2/grub2
+```
+
+Монтируем ФС
+
+```
+mount /dev/grub2/grub2 /mnt
+```
+
+Клонируем файлы из каталога /boot
+
+```
+yum install rsync -y
+rsync -axu /boot/ /mnt/ && fixfiles restore && umount /mnt/
+```
+
+Меняем точку монтирования /boot в /etc/fstab
+
+```
+vi /etc/fstab
+
+/dev/grub2/grub2 /boot                   xfs     defaults        0 0
+```
+
+Перемеонтируем каталог /boot
+
+```
+umount /boot
+mount /boot
+```
+
+Устанавливаем GRUB на LVM раздел
+
+```
+grub2-mkconfig -o /boot/grub2/grub.cfg
+grub2-install --skip-fs-probe /dev/sdb
+```
+
+Перезагружаемся, в VirtualBox при перезапуске нажимаем f12 и выбираем загрузку со второго диска, убеждаемся что ос успешно загружается.
