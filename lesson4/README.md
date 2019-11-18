@@ -208,56 +208,112 @@ done
 Перезагружаемся и проверяем что ОС запускается корректно.
 
 
-Теперь настроим загрузку GRUB с LVM раздела
+Теперь рассмотрим установку модуля с помощью dracut
 
-Устанавливаем пропатченный grub
+В примере ниже модуль будет расширять LVM раздел с /
 
-```
-yum remove grub2*
-rpm -i https://yum.rumyantsev.com/centos/7/x86_64/grub2-common-2.02-0.76.el7.noarch.rpm
-rpm -i https://yum.rumyantsev.com/centos/7/x86_64/grub2-pc-modules-2.02-0.76.el7.noarch.rpm
-rpm -i https://yum.rumyantsev.com/centos/7/x86_64/grub2-tools-minimal-2.02-0.76.el7.x86_64.rpm
-rpm -i https://yum.rumyantsev.com/centos/7/x86_64/grub2-tools-2.02-0.76.el7.x86_64.rpm
-rpm -i https://yum.rumyantsev.com/centos/7/x86_64/grub2-tools-extra-2.02-0.76.el7.x86_64.rpm
-rpm -i https://yum.rumyantsev.com/centos/7/x86_64/grub2-pc-2.02-0.76.el7.x86_64.rpm
-rpm -i https://yum.rumyantsev.com/centos/7/x86_64/grub2-2.02-0.76.el7.x86_64.rpm
-```
-
-Создаем PV
+Устанавливаем git
 
 ```
-[root@centoslvm ~]# pvcreate --bootloaderareasize 1m  /dev/sdb
-  Physical volume "/dev/sdb" successfully created.
+yum install git -y
 ```
 
-Создаем VG
+Клонируем репозиторий с модулем dracut
 
 ```
-[root@centoslvm ~]# vgcreate grub2 /dev/sdb
-  Volume group "grub2" successfully created
+git clone https://github.com/thedolphin/dracut-root-lv-resize.git
+```
+
+Переходим в каталог с модулем
+
+```
+cd dracut-root-lv-resize/
+```
+
+Копируем файлы:
+
+опции модуля в /etc 
+
+```
+cp etc/dracut.conf.d/lvm-resize-root.conf  /etc/dracut.conf.d/
+```
+
+копируем сам модуль:
+
+```
+cp -r usr/lib/dracut/modules.d/99lvm-resize-root /usr/lib/dracut/modules.d/
+```
+
+Теперь добавим PV и расширим VG корневого раздела, чтобы было свободное место для расширения LV
+
+```
+pvcreate  /dev/sdc
+pvcreate /dev/sdd
+vgextend centos_centoslvm /dev/sdc /dev/sdd
+```
+
+Теперь посмотрим насколько можно расширить корневой раздел:
+
+```
+lvdisplay
+
+  LV Path                /dev/centos_centoslvm/root
+  LV Name                root
+  VG Name                centos_centoslvm
+  LV UUID                1e46sm-jT2i-0BVX-m72Q-kUn6-qoba-1tJGJl
+  LV Write Access        read/write
+  LV Creation host, time localhost, 2019-06-03 14:49:52 +1200
+  LV Status              available
+  # open                 1
+  LV Size                50.00 GiB
+  Current LE             12800
+  Segments               1
+  Allocation             inherit
+  Read ahead sectors     auto
+  - currently set to     8192
+  Block device           253:0
 
 ```
 
-Создаем LVM
+Расширим раздел до 51 Gb с помощью опции в файле lvm-resize-root.conf (lvm_resize=51G)
 
 ```
-[root@centoslvm ~]# lvcreate -n grub2 -l 100%FREE grub2
-  Logical volume "grub2" created.
+vi /etc/dracut.conf.d/lvm-resize-root.conf
 ```
 
-Создаем ФС
-```
-mkfs.ext4 /dev/grub2/grub2
-```
-
-Монтируем ФС
+Применяем изменения в initrd:
 
 ```
-mount /dev/grub2/grub2 /mnt
+dracut -f -v
 ```
 
-Устанавливаем GRUB на LVM раздел
+Перезагружаемся:
 
 ```
-grub2-install --skip-fs-probe /dev/grub2/grub2
+reboot
 ```
+
+Подключаемся по ssh и проверяем:
+
+```
+vagrant ssh
+lvdisplay
+
+  LV Path                /dev/centos_centoslvm/root
+  LV Name                root
+  VG Name                centos_centoslvm
+  LV UUID                1e46sm-jT2i-0BVX-m72Q-kUn6-qoba-1tJGJl
+  LV Write Access        read/write
+  LV Creation host, time localhost, 2019-06-03 14:49:52 +1200
+  LV Status              available
+  # open                 1
+  LV Size                51.00 GiB
+  Current LE             13056
+  Segments               3
+  Allocation             inherit
+  Read ahead sectors     auto
+  - currently set to     8192
+  Block device           253:0
+
+```
+
