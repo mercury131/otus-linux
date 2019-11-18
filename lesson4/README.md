@@ -152,41 +152,6 @@ sudo reboot
 
 подключаемся по ssh и переименовываем раздел:
 ```
-[root@centoslvm ~]# lvdisplay
-  --- Logical volume ---
-  LV Path                /dev/centos_centoslvm/swap
-  LV Name                swap
-  VG Name                centos_centoslvm
-  LV UUID                EMQfR0-xaHH-QJ5M-Bj40-cQbm-ptOl-dWsOGz
-  LV Write Access        read/write
-  LV Creation host, time localhost, 2019-06-03 14:49:51 +1200
-  LV Status              available
-  # open                 2
-  LV Size                2.00 GiB
-  Current LE             512
-  Segments               1
-  Allocation             inherit
-  Read ahead sectors     auto
-  - currently set to     8192
-  Block device           253:1
-
-  --- Logical volume ---
-  LV Path                /dev/centos_centoslvm/root
-  LV Name                root
-  VG Name                centos_centoslvm
-  LV UUID                1e46sm-jT2i-0BVX-m72Q-kUn6-qoba-1tJGJl
-  LV Write Access        read/write
-  LV Creation host, time localhost, 2019-06-03 14:49:52 +1200
-  LV Status              available
-  # open                 1
-  LV Size                50.00 GiB
-  Current LE             12800
-  Segments               1
-  Allocation             inherit
-  Read ahead sectors     auto
-  - currently set to     8192
-  Block device           253:0
-
 
 [root@centoslvm ~]# lvrename /dev/centos_centoslvm/root failroot
   Renamed "root" to "failroot" in volume group "centos_centoslvm"
