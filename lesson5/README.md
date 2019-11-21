@@ -288,39 +288,8 @@ WantedBy=multi-user.target
 Теперь создаим 2 файла с переменными окружения:
 
 ```
-cp /etc/sysconfig/httpd /etc/sysconfig/httpd-2
 cp /etc/sysconfig/httpd /etc/sysconfig/httpd-1
-
-```
-
-
-Создадим конфиги с PID и порт для данных сервисов:
-
-```
-vi /etc/httpd-1.conf
-```
-
-```
-cat /etc/httpd-1.conf
-
-Listen 81
-User apache
-Group apache
-PidFile /var/run/httpd-1.pid
-
-```
-
-```
-vi /etc/httpd-2.conf
-```
-
-```
-cat /etc/httpd-2.conf
-
-Listen 82
-User apache
-Group apache
-PidFile /var/run/httpd-2.pid
+cp /etc/sysconfig/httpd /etc/sysconfig/httpd-2
 
 ```
 
@@ -334,7 +303,7 @@ vi /etc/sysconfig/httpd-2
 ```
 cat /etc/sysconfig/httpd-1
 
-OPTIONS=-f /etc/httpd-1.conf
+OPTIONS=-f conf/httpd-1.conf
 
 #
 # This setting ensures the httpd process is started in the "C" locale
@@ -350,7 +319,7 @@ LANG=C
 ```
 cat /etc/sysconfig/httpd-2
 
-OPTIONS=-f /etc/httpd-2.conf
+OPTIONS=-f conf/httpd-2.conf
 
 #
 # This setting ensures the httpd process is started in the "C" locale
@@ -361,6 +330,40 @@ OPTIONS=-f /etc/httpd-2.conf
 LANG=C
 
 ```
+
+Создадим конфиги с PID и порт для данных сервисов:
+
+```
+vi /etc/httpd/conf/httpd-1.conf
+```
+
+```
+cat /etc/httpd/conf/httpd-1.conf
+
+Listen 81
+PidFile /var/run/httpd-1.pid
+LoadModule mpm_event_module modules/mod_mpm_event.so
+LoadModule unixd_module modules/mod_unixd.so
+LoadModule systemd_module modules/mod_systemd.so
+
+```
+
+```
+vi /etc/httpd/conf/httpd-2.conf
+```
+
+```
+cat /etc/httpd/conf/httpd-2.conf
+
+Listen 9000
+PidFile /var/run/httpd-2.pid
+LoadModule mpm_event_module modules/mod_mpm_event.so
+LoadModule unixd_module modules/mod_unixd.so
+LoadModule systemd_module modules/mod_systemd.so
+
+```
+
+В конфигах порты 9000 и 81 используются из-за того что они по умолчанию разрешены SE Linux
 
 
 Выполняем перезапуск конфигурации сервисов
@@ -373,5 +376,155 @@ systemctl daemon-reload
 
 ```
 systemctl start httpd@1
+systemctl start httpd@2
 ```
 
+Проверяем что сервисы запустились:
+
+```
+httpd@1.service - The Apache HTTP Server
+   Loaded: loaded (/etc/systemd/system/httpd@.service; disabled; vendor preset: disabled)
+   Active: active (running) since Thu 2019-11-21 20:49:28 NZDT; 7min ago
+     Docs: man:httpd(8)
+           man:apachectl(8)
+  Process: 18269 ExecStop=/bin/kill -WINCH ${MAINPID} (code=exited, status=1/FAILURE)
+ Main PID: 18506 (httpd)
+   Status: "Total requests: 0; Current requests/sec: 0; Current traffic:   0 B/sec"
+   CGroup: /system.slice/system-httpd.slice/httpd@1.service
+           ├─18506 /usr/sbin/httpd -f conf/httpd-1.conf -DFOREGROUND
+           ├─18507 /usr/sbin/httpd -f conf/httpd-1.conf -DFOREGROUND
+           ├─18508 /usr/sbin/httpd -f conf/httpd-1.conf -DFOREGROUND
+           └─18509 /usr/sbin/httpd -f conf/httpd-1.conf -DFOREGROUND
+
+Nov 21 20:49:28 testsystemd systemd[1]: Starting The Apache HTTP Server...
+Nov 21 20:49:28 testsystemd httpd[18506]: AH00558: httpd: Could not reliably determine the server's fully qualified domain name, using 127.0.0.1. Set the 'ServerName' directive globally to suppress this message
+Nov 21 20:49:28 testsystemd systemd[1]: Started The Apache HTTP Server.
+
+```
+
+
+```
+systemctl status httpd@2
+
+● httpd@2.service - The Apache HTTP Server
+   Loaded: loaded (/etc/systemd/system/httpd@.service; disabled; vendor preset: disabled)
+   Active: active (running) since Thu 2019-11-21 20:55:45 NZDT; 2s ago
+     Docs: man:httpd(8)
+           man:apachectl(8)
+  Process: 18652 ExecStop=/bin/kill -WINCH ${MAINPID} (code=exited, status=1/FAILURE)
+ Main PID: 18665 (httpd)
+   Status: "Processing requests..."
+   CGroup: /system.slice/system-httpd.slice/httpd@2.service
+           ├─18665 /usr/sbin/httpd -f conf/httpd-2.conf -DFOREGROUND
+           ├─18666 /usr/sbin/httpd -f conf/httpd-2.conf -DFOREGROUND
+           ├─18667 /usr/sbin/httpd -f conf/httpd-2.conf -DFOREGROUND
+           └─18668 /usr/sbin/httpd -f conf/httpd-2.conf -DFOREGROUND
+
+Nov 21 20:55:45 testsystemd systemd[1]: Starting The Apache HTTP Server...
+Nov 21 20:55:45 testsystemd httpd[18665]: AH00558: httpd: Could not reliably determine the server's fully qualified domain name, using 127.0.0.1. Set the 'ServerName' directive globally to suppress this message
+Nov 21 20:55:45 testsystemd systemd[1]: Started The Apache HTTP Server.
+
+```
+
+## Установка Jira и создание сервиса для нее.
+
+Первым делом устанавливаем java и wget
+
+```
+yum install -y java-1.8.0-openjdk-devel wget
+```
+
+Далее переходим в /opt и скачивам туда jira
+
+```
+cd /opt
+wget https://www.atlassian.com/software/jira/downloads/binary/atlassian-jira-software-8.5.1-x64.bin
+
+```
+
+Выставляем права на запуск 
+
+```
+chmod +x atlassian-jira-software-8.5.1-x64.bin
+```
+
+Запускаем установку
+
+```
+./atlassian-jira-software-8.5.1-x64.bin
+```
+
+Во время установки выбираем Advanced install (2) и отказываемся от установки сервиса
+
+В конце установки соглашаемся запустить jira и через PS AUX посмотрим ее строку запуска:
+
+```
+ps aux | grep jira
+jira     19119 90.8 17.0 4499252 320620 ?      Sl   21:11   0:31 /opt/atlassian/jira/jre//bin/java -Djava.util.logging.config.file=/opt/atlassian/jira/conf/logging.properties -Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager -Xms384m -Xmx2048m -XX:InitialCodeCacheSize=32m -XX:ReservedCodeCacheSize=512m -Djava.awt.headless=true -Datlassian.standalone=JIRA -Dorg.apache.jasper.runtime.BodyContentImpl.LIMIT_BUFFER=true -Dmail.mime.decodeparameters=true -Dorg.dom4j.factory=com.atlassian.core.xml.InterningDocumentFactory -XX:-OmitStackTraceInFastThrow -Djava.locale.providers=COMPAT -Datlassian.plugins.startup.options= -Djdk.tls.ephemeralDHKeySize=2048 -Djava.protocol.handler.pkgs=org.apache.catalina.webresources -Dorg.apache.catalina.security.SecurityListener.UMASK=0027 -Xloggc:/opt/atlassian/jira/logs/atlassian-jira-gc-%t.log -XX:+UseGCLogFileRotation -XX:NumberOfGCLogFiles=5 -XX:GCLogFileSize=20M -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintGCTimeStamps -XX:+PrintGCCause -Dignore.endorsed.dirs= -classpath /opt/atlassian/jira/bin/bootstrap.jar:/opt/atlassian/jira/bin/tomcat-juli.jar -Dcatalina.base=/opt/atlassian/jira -Dcatalina.home=/opt/atlassian/jira -Djava.io.tmpdir=/opt/atlassian/jira/temp org.apache.catalina.startup.Bootstrap start
+```
+
+Убиваем процесс jira
+
+```
+kill 19119
+```
+
+Переходим к созданию сервиса
+
+Поскольку Jira имеет скрипты для запуска (start-jira.sh) и остановки (stop-jira.sh), это существенно упрощает создание сервиса:
+
+```
+cat /etc/systemd/system/jira.service
+
+[Unit]
+Description=JIRA startup service
+After=network.target
+
+[Service]
+
+Type=forking
+ExecStart=/opt/atlassian/jira/bin/start-jira.sh
+ExecStop=/opt/atlassian/jira/bin/stop-jira.sh
+PIDFile=/opt/atlassian/jira/work/catalina.pid
+KillMode=process
+
+[Install]
+WantedBy=multi-user.target
+
+```
+
+Выполняем перезапуск конфигурации сервисов
+
+```
+systemctl daemon-reload
+```
+
+Запускаем созданный сервис Jira
+
+```
+systemctl start jira.service
+```
+
+Проверяем что сервис запущен:
+
+```
+systemctl status jira.service
+● jira.service - JIRA startup service
+   Loaded: loaded (/etc/systemd/system/jira.service; disabled; vendor preset: disabled)
+   Active: active (running) since Thu 2019-11-21 21:24:49 NZDT; 5s ago
+  Process: 26837 ExecStart=/opt/atlassian/jira/bin/start-jira.sh (code=exited, status=0/SUCCESS)
+ Main PID: 26874 (java)
+   CGroup: /system.slice/jira.service
+           └─26874 /opt/atlassian/jira/jre//bin/java -Djava.util.logging.config.file=/opt/atlassian/jira/conf/logging.properties -Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager -Xms384m -Xmx2048m -XX:InitialCodeCacheSize=32m -XX:ReservedCodeCacheSize...
+
+Nov 21 21:24:49 testsystemd start-jira.sh[26837]: MMMMM
+Nov 21 21:24:49 testsystemd start-jira.sh[26837]: `UOJ
+Nov 21 21:24:49 testsystemd start-jira.sh[26837]: Atlassian Jira
+Nov 21 21:24:49 testsystemd start-jira.sh[26837]: Version : 8.5.1
+Nov 21 21:24:49 testsystemd start-jira.sh[26837]: If you encounter issues starting or stopping JIRA, please see the Troubleshooting guide at https://docs.atlassian.com/jira/jadm-docs-085/Troubleshooting+installation
+Nov 21 21:24:49 testsystemd start-jira.sh[26837]: Server startup logs are located in /opt/atlassian/jira/logs/catalina.out
+Nov 21 21:24:49 testsystemd start-jira.sh[26837]: Existing PID file found during start.
+Nov 21 21:24:49 testsystemd start-jira.sh[26837]: Removing/clearing stale PID file.
+Nov 21 21:24:49 testsystemd start-jira.sh[26837]: Tomcat started.
+Nov 21 21:24:49 testsystemd systemd[1]: Started JIRA startup service.
+```
