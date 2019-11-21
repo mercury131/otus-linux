@@ -1,0 +1,127 @@
+# -*- mode: ruby -*-
+# vim: set ft=ruby :
+
+MACHINES = {
+  :testsystemd => {
+        :box_name => "cdaf/CentOSLVM",
+        :ip_addr => '192.168.11.101',
+	:disks => {
+		:sata01 => {
+                        :dfile => 'sata01.vdi',
+                        :size => 10, # Megabytes
+			:port => 1
+		}
+
+	}
+
+		
+  },
+}
+
+Vagrant.configure("2") do |config|
+
+#config.ssh.extra_args = ["-R", "3128:localhost:3128"]
+#config.vm.synced_folder '.', '/vagrant', disabled: true
+config.ssh.forward_agent = true
+
+  MACHINES.each do |boxname, boxconfig|
+
+      config.vm.define boxname do |box|
+
+          box.vm.box = boxconfig[:box_name]
+          box.vm.host_name = boxname.to_s
+		  
+          #box.vm.network "forwarded_port", guest: 3260, host: 3260+offset
+
+          box.vm.network "private_network", ip: boxconfig[:ip_addr]
+
+          box.vm.provider :virtualbox do |vb|
+            	  vb.customize ["modifyvm", :id, "--memory", "2048"]
+                  needsController = false
+		  boxconfig[:disks].each do |dname, dconf|
+			  unless File.exist?(dconf[:dfile])
+				vb.customize ['createhd', '--filename', dconf[:dfile], '--variant', 'Fixed', '--size', dconf[:size]]
+                                needsController =  true
+                          end
+
+		  end
+                  if needsController == true
+                     boxconfig[:disks].each do |dname, dconf|
+                         vb.customize ['storageattach', :id,  '--storagectl', 'SATA', '--port', dconf[:port], '--device', 0, '--type', 'hdd', '--medium', dconf[:dfile]]
+                     end
+                  end
+          end
+		  
+
+	  
+
+
+      end
+  end
+  
+   	  config.vm.provision "shell", inline: <<-SHELL
+	      mkdir -p ~root/.ssh
+              cp ~vagrant/.ssh/auth* ~root/.ssh
+		  #yum install rsync -y
+		  cp /vagrant/watcher.service /etc/systemd/system/
+		  cp /vagrant/watcher.target /etc/systemd/system/
+		  cp /vagrant/watcher.sh /opt/ && chmod +x /opt/watcher.sh
+		  touch /etc/sysconfig/watcher
+		  echo 'WORD="USER_LOGIN"' >> /etc/sysconfig/watcher
+		  echo 'LOG=/var/log/audit/audit.log' >> /etc/sysconfig/watcher
+		  systemctl daemon-reload
+		  systemctl start watcher.service
+		  systemctl status watcher.service
+		  yum install epel-release -y && yum install spawn-fcgi php php-cli mod_fcgid httpd -y
+		  echo 'SOCKET=/var/run/php-fcgi.sock' > /etc/sysconfig/spawn-fcgi
+		  echo 'OPTIONS="-u apache -g apache -s $SOCKET -S -M 0600 -C 32 -F 1 -P /var/run/spawn-fcgi.pid -- /usr/bin/php-cgi"' >> /etc/sysconfig/spawn-fcgi
+		  cp /vagrant/spawn-fcgi.service /etc/systemd/system/
+		  systemctl daemon-reload
+		  systemctl start spawn-fcgi.service
+		  systemctl status spawn-fcgi.service
+		  cp /vagrant/httpd.service /etc/systemd/system/httpd@.service
+		  echo 'OPTIONS=-f conf/httpd-1.conf' > /etc/sysconfig/httpd-1
+		  echo 'LANG=C' >> /etc/sysconfig/httpd-1
+		  echo 'OPTIONS=-f conf/httpd-2.conf' > /etc/sysconfig/httpd-2
+		  echo 'LANG=2' >> /etc/sysconfig/httpd-2
+		  echo 'Listen 81' > /etc/httpd/conf/httpd-1.conf
+		  echo 'PidFile /var/run/httpd-1.pid' >> /etc/httpd/conf/httpd-1.conf
+		  echo 'LoadModule mpm_event_module modules/mod_mpm_event.so' >> /etc/httpd/conf/httpd-1.conf
+		  echo 'LoadModule unixd_module modules/mod_unixd.so' >> /etc/httpd/conf/httpd-1.conf
+		  echo 'LoadModule systemd_module modules/mod_systemd.so' >> /etc/httpd/conf/httpd-1.conf
+		  echo 'Listen 9000' > /etc/httpd/conf/httpd-2.conf
+		  echo 'PidFile /var/run/httpd-2.pid' >> /etc/httpd/conf/httpd-2.conf
+		  echo 'LoadModule mpm_event_module modules/mod_mpm_event.so' >> /etc/httpd/conf/httpd-2.conf
+		  echo 'LoadModule unixd_module modules/mod_unixd.so' >> /etc/httpd/conf/httpd-2.conf
+		  echo 'LoadModule systemd_module modules/mod_systemd.so' >> /etc/httpd/conf/httpd-2.conf
+		  systemctl daemon-reload
+		  systemctl start httpd@1
+		  systemctl start httpd@2
+		  systemctl status httpd@1
+		  systemctl status httpd@2
+		  yum install -y java-1.8.0-openjdk-devel wget
+		  cd /opt
+		  wget https://www.atlassian.com/software/jira/downloads/binary/atlassian-jira-software-8.5.1.tar.gz
+		  tar zxvf atlassian-jira-software-8.5.1.tar.gz
+		  mkdir /opt/atlassian
+		  mv /opt/atlassian-jira-software-8.5.1-standalone /opt/atlassian/jira
+		  cp /vagrant/jira.service /etc/systemd/system/
+		  systemctl daemon-reload
+		  systemctl start jira.service
+		  systemctl status jira.service
+		  echo "LESSON 1 ##################################################"
+		  systemctl status watcher.service
+	      echo "LESSON 2 ##################################################"
+		  systemctl status spawn-fcgi.service
+		  echo "LESSON 3 ##################################################"
+		  systemctl status httpd@1
+		  systemctl status httpd@2
+		  echo "LESSON 4 ##################################################"
+		  systemctl status jira.service
+  	  SHELL
+	  
+  ####
+  
+end
+
+

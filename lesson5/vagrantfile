@@ -20,7 +20,7 @@ MACHINES = {
 
 Vagrant.configure("2") do |config|
 
-config.ssh.extra_args = ["-R", "3128:localhost:3128"]
+#config.ssh.extra_args = ["-R", "3128:localhost:3128"]
 #config.vm.synced_folder '.', '/vagrant', disabled: true
 config.ssh.forward_agent = true
 

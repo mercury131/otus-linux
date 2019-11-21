@@ -35,7 +35,16 @@ git clone git@github.com:mercury131/otus-linux.git
 vagrant plugin install vagrant-reload
 ```
 
-Для запуска VM выполните:
+Для запуска Vagrantfile автоматизированными шагами выполните:
+
+```
+cd otus-linux/lesson5/auto
+vagrant up 
+vagrant ssh
+```
+
+
+Для запуска чистой Centos 7 (чтобы выполнить шаги вручную) выполните:
 
 ```
 cd otus-linux/lesson5/
@@ -77,7 +86,7 @@ touch /etc/sysconfig/watcher
 
 ```
 echo 'WORD="USER_LOGIN"' >> /etc/sysconfig/watcher
-echo 'FILE=/var/log/audit/audit.log' >> /etc/sysconfig/watcher
+echo 'LOG=/var/log/audit/audit.log' >> /etc/sysconfig/watcher
 ```
 
 Обновим конфигурацию сервисов systemd 
@@ -382,6 +391,8 @@ systemctl start httpd@2
 Проверяем что сервисы запустились:
 
 ```
+systemctl status httpd@1
+
 httpd@1.service - The Apache HTTP Server
    Loaded: loaded (/etc/systemd/system/httpd@.service; disabled; vendor preset: disabled)
    Active: active (running) since Thu 2019-11-21 20:49:28 NZDT; 7min ago

@@ -1,0 +1,14 @@
+[Unit]
+Description=JIRA startup service
+After=network.target
+
+[Service]
+
+Type=forking
+ExecStart=/opt/atlassian/jira/bin/start-jira.sh
+ExecStop=/opt/atlassian/jira/bin/stop-jira.sh
+PIDFile=/opt/atlassian/jira/work/catalina.pid
+KillMode=process
+
+[Install]
+WantedBy=multi-user.target
