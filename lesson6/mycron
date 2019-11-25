@@ -1,0 +1,1 @@
+*/5 * * * * /bin/bash /vagrant/log-analizer.sh /vagrant/access-4560-6440672.log

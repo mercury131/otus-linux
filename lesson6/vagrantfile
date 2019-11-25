@@ -2,7 +2,7 @@
 # vim: set ft=ruby :
 
 MACHINES = {
-  :testsystemd => {
+  :testbash => {
         :box_name => "cdaf/CentOSLVM",
         :ip_addr => '192.168.11.101',
 	:disks => {
@@ -62,8 +62,19 @@ config.ssh.forward_agent = true
    	  config.vm.provision "shell", inline: <<-SHELL
 	      mkdir -p ~root/.ssh
               cp ~vagrant/.ssh/auth* ~root/.ssh
-		  yum install rsync -y
-		  
+		  yum install postfix -y  
+		  echo "MAILTO=admin@mail.test.net" >> mycron
+		  echo "*/5 * * * * /bin/bash /vagrant/log-analizer.sh /vagrant/access-4560-6440672.log" >> mycron
+		  crontab mycron
+		  echo "myhostname = mail.test.net " >> /etc/postfix/main.cf
+		  echo "mydomain = test.net " >> /etc/postfix/main.cf
+		  echo "myorigin = $mydomain " >> /etc/postfix/main.cf
+		  echo "inet_interfaces = all" >> /etc/postfix/main.cf
+		  echo "mydestination = $myhostname, localhost, $mydomain" >> /etc/postfix/main.cf
+		  echo "mynetworks = 127.0.0.0/8, /32" >> /etc/postfix/main.cf
+		  echo "relay_domains = $mydestination" >> /etc/postfix/main.cf
+		  echo "home_mailbox = Maildir/" >> /etc/postfix/main.cf
+		  crontab -l
 
 	      
   	  SHELL
