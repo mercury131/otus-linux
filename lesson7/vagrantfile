@@ -78,10 +78,22 @@ config.ssh.forward_agent = true
 		  systemctl start nginx;systemctl status nginx
 		  yum install docker -y
 		  systemctl start docker
+		  echo 0 > /sys/fs/selinux/enforce
 		  mkdir /srv/nginx/
-		  mkdir /srv/www
-		  cp /etc/nginx/nginx.conf /srv/nginx/
-		  docker run -it --name nginxrepo -v /srv/nginx/nginx.conf:/etc/nginx/nginx.conf -v /srv/www/:/usr/share/nginx/ nginx:latest --env HTTPS_PROXY="https://127.0.0.1:3128" --env HTTP_PROXY="https://127.0.0.1:3128"
+		  mkdir /var/www
+		  export no_proxy=localhost
+		  chmod -R 0755 /var/www
+		  cp /root/rpmbuild/RPMS/x86_64/nginx-* /var/www
+		  docker run -d --name nginxrepo  -v /var/www:/usr/share/nginx/html -p 8080:80 nginx:latest
+		  #docker exec nginxrepo awk  '/index.html/{print "autoindex on;" }1' /etc/nginx/conf.d/default.conf > default.conf
+		  docker cp /vagrant/default.conf nginxrepo:/etc/nginx/conf.d/default.conf
+		  docker exec nginxrepo service nginx reload
+		  createrepo /var/www
+		  wget localhost:8080/nginx-1.14.1-1.el7_4.ngx.x86_64.rpm
+		  
+		  
+		  
+		  
 		  
 	      
   	  SHELL
