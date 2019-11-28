@@ -63,7 +63,6 @@ config.ssh.forward_agent = true
 	      mkdir -p ~root/.ssh
               cp ~vagrant/.ssh/auth* ~root/.ssh
 		  yum install createrepo -y
-		  yum install createrepo -y
 		  yum install -y redhat-lsb-core wget rpmdevtools rpm-build createrepo yum-utils
 		  wget https://nginx.org/packages/centos/7/SRPMS/nginx-1.14.1-1.el7_4.ngx.src.rpm
 		  rpm -ivh nginx-1.14.1-1.el7_4.ngx.src.rpm
