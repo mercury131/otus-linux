@@ -82,7 +82,7 @@ config.ssh.forward_agent = true
 		  mkdir /var/www
 		  export no_proxy=localhost
 		  chmod -R 0755 /var/www
-		  cp /root/rpmbuild/RPMS/x86_64/nginx-* /var/www
+		  cp rpmbuild/RPMS/x86_64/nginx-* /var/www
 		  docker run -d --name nginxrepo  -v /var/www:/usr/share/nginx/html -p 8080:80 nginx:latest
 		  #docker exec nginxrepo awk  '/index.html/{print "autoindex on;" }1' /etc/nginx/conf.d/default.conf > default.conf
 		  docker cp /vagrant/default.conf nginxrepo:/etc/nginx/conf.d/default.conf
