@@ -20,7 +20,7 @@
 - ** *реализовать дополнительно пакет через docker** 
 
 Используемые файлы и директории:
-- В директории lesson6 расположен Vagrantfile с образом Centos 7 и автоматизированными шагами выполнения задания
+- В директории lesson7 расположен Vagrantfile с образом Centos 7 и автоматизированными шагами выполнения задания
 
 
 # Как проверить домашнее задание?
@@ -161,3 +161,57 @@ createrepo /var/www
 ```
 wget localhost:8080/nginx-1.14.1-1.el7_4.ngx.x86_64.rpm
 ```
+
+Теперь соберем образ и отправим его в Docker Hub. 
+
+Копируем папку с приложением и файлами для сборки образа
+
+```
+cp -r /vagrant/docker ./
+cd docker
+```
+
+Запускаем процесс сборки:
+
+```
+docker build ./ --tag=hellootus 
+```
+
+Логинимся на Docker Hub
+
+```
+docker login
+```
+
+Помечаем собранный образ тэгом
+
+```
+docker tag hellootus mercury131/otus:hellootus
+```
+
+Загружаем образ:
+
+```
+docker push mercury131/otus:hellootus
+```
+
+Теперь можно запустить собранный образ из нашего Docker Hub
+
+```
+docker run -d -p 4000:8081 mercury131/otus:hellootus
+```
+
+Проверяем что приложение внутри контейнера работает:
+
+```
+[root@testrpm ~]# docker ps
+CONTAINER ID        IMAGE                       COMMAND                  CREATED             STATUS              PORTS                    NAMES
+c5255df21529        mercury131/otus:hellootus   "/usr/bin/dumb-ini..."   5 minutes ago       Up 5 minutes        0.0.0.0:4000->8081/tcp   gracious_turing
+```
+
+```
+[root@testrpm ~]# curl http://localhost:4000
+Hello OTUS!
+```
+
+Приложение собрано и работает.
