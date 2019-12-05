@@ -9,9 +9,16 @@
       register: nginxinstalled
       notify:
           - nginx start
+          
+    - name: Enable Nginx Service
+      service:
+        name: nginx
+        enabled: yes
+      when: nginxinstalled is succeeded
+      register: nginxenabled
 
     - name: Add NGINX cofig
-      when: nginxinstalled is succeeded
+      when: nginxenabled is succeeded
       template: src=default.conf dest=/etc/nginx/conf.d/default.conf owner=nginx group=nginx
 
     - name: Copy custom page
