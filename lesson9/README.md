@@ -152,3 +152,109 @@ Hello OTUS!
 ```
 
 Приложение собрано и работает.
+
+Теперь соберем контейнер nginx, базой которого будет alpine linux.
+
+переходим в каталог /vagrant/docker-build-nginx
+
+```
+cd /vagrant/docker-build-nginx
+```
+
+Для  сборки используется следующий dockerfile:
+
+```
+FROM alpine
+
+RUN apk update && apk add nginx && apk del *-dev build-base autoconf libtool && rm -rf /var/cache/apk/* /tmp/*
+
+RUN  mkdir -p /usr/share/nginx/html && mkdir -p /run/nginx && mkdir -p /var/lib/nginx/tmp
+
+COPY index.html /usr/share/nginx/html/
+
+COPY default.conf /etc/nginx/conf.d/
+
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]
+```
+
+Запустим сборку образа:
+
+```
+docker build -t alpine-nginx:latest .
+```
+
+Теперь отправим образ в docker hub
+
+Логинимся на Docker Hub
+
+```
+docker login
+```
+
+Помечаем собранный образ тэгом
+
+```
+docker tag alpine-nginx mercury131/alpine-nginx:latest
+```
+
+Загружаем образ:
+
+```
+docker push mercury131/alpine-nginx:latest
+```
+
+Теперь можно запустить собранный образ из нашего Docker Hub
+
+```
+docker run -d -p 8080:80 mercury131/alpine-nginx:latest
+```
+
+Открываем в браузере страницу http://192.168.11.101:8080/ и видим запущенный контейнер.
+
+Теперь ответим на вопрос чем отличается образ от контейнера? 
+
+Образ, это сущность состоящая из слоев, которые мы выполняем при сборке. 
+
+Образ можно использовать или переиспользовать при сборке других образов, либо для запуска, тогда мы получаем другую сущность контейнер.
+
+Контейнер же является запущенным образом, м него можно вносить изменения, но нужно понимать что это stateless сущность, при перезапуске контейнера все внесенные изменения будут потеряны (если изменения вносились не на подключенный volume)
+
+Итого - изменения можно и нужно вносить в образ, из которого потом тиражировать контейнеры.
+
+Можно ли собрать ядро Linux в контейнере? 
+
+Можно, в каталоге otus-linux/lesson9/docker-build-kernel/ , Dockerfile выглядит следующим образом:
+
+```
+
+FROM centos:centos7
+
+RUN yum install openssl ncurses-devel make gcc bc openssl-devel elfutils-libelf-devel rpm-build wget flex bison rsync -y
+
+COPY .config /tmp/.config
+
+RUN  wget https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-5.3.8.tar.xz && tar xvf linux-5.3.8.tar.xz
+
+RUN	 cd /linux-5.3.8 && cp /tmp/.config /linux-5.3.8/.config && cat  /tmp/.config && yes "" | make oldconfig &&	 make rpm-pkg 
+
+
+CMD ["/bin/sh"]
+
+```
+
+Обратите внимание, что в контейнере нет каталога /boot/ , и взять конфиг оттуда не получится. 
+
+Поэтому берем файл с "настоящей Centos 7 " и просто копируем его в контейнер при сборке.
+
+Запускаем сборку:
+
+```
+docker build -t build-kernel:latest .
+```
+
+После ее завершения собранные RPM будут внутри контейнера, вытащить их можно командой docker cp
+
+Каталог с собранными RPM /linux-5.3.8/rpmbuild/RPMS/x86_64/
+
