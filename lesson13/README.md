@@ -65,6 +65,12 @@ http://192.168.11.101:3000/
 
 Откройте дашборды Prometheus и Influx
 
+![Datasources](https://raw.githubusercontent.com/mercury131/otus-linux/master/lesson13/datasources.PNG)
+
+![Influx dashboard](https://raw.githubusercontent.com/mercury131/otus-linux/master/lesson13/influx.PNG)
+
+![Prometheus dashboard](https://raw.githubusercontent.com/mercury131/otus-linux/master/lesson13/prometheus.PNG)
+
 # Описание выполнения данного задания.
 
 Устанавливаем необходимые пакеты:
