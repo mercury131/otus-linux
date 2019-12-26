@@ -1,0 +1,134 @@
+# -*- mode: ruby -*-
+# vim: set ft=ruby :
+
+MACHINES = {
+  :testmonitoring => {
+        :box_name => "cdaf/CentOSLVM",
+        :ip_addr => '192.168.11.101',
+	:disks => {
+		:sata01 => {
+                        :dfile => 'sata01.vdi',
+                        :size => 10, # Megabytes
+			:port => 1
+		}
+
+	}
+
+		
+  },
+}
+
+Vagrant.configure("2") do |config|
+
+#config.ssh.extra_args = ["-R", "3128:localhost:3128"]
+#config.vm.synced_folder '.', '/vagrant', disabled: true
+config.ssh.forward_agent = true
+
+  MACHINES.each do |boxname, boxconfig|
+
+      config.vm.define boxname do |box|
+
+          box.vm.box = boxconfig[:box_name]
+          box.vm.host_name = boxname.to_s
+		  
+          box.vm.network "forwarded_port", guest: 80, host: 80
+		  box.vm.network "forwarded_port", guest: 3000, host: 3000
+
+          box.vm.network "private_network", ip: boxconfig[:ip_addr]
+
+          box.vm.provider :virtualbox do |vb|
+            	  vb.customize ["modifyvm", :id, "--memory", "15000","--cpus", "8"]
+                  needsController = false
+		  boxconfig[:disks].each do |dname, dconf|
+			  unless File.exist?(dconf[:dfile])
+				vb.customize ['createhd', '--filename', dconf[:dfile], '--variant', 'Fixed', '--size', dconf[:size]]
+                                needsController =  true
+                          end
+
+		  end
+                  if needsController == true
+                     boxconfig[:disks].each do |dname, dconf|
+                         vb.customize ['storageattach', :id,  '--storagectl', 'SATA', '--port', dconf[:port], '--device', 0, '--type', 'hdd', '--medium', dconf[:dfile]]
+                     end
+                  end
+          end
+		  
+
+	  
+
+
+      end
+  end
+  
+config.vm.provision "shell", inline: <<-SHELL
+              mkdir -p ~root/.ssh
+              cp ~vagrant/.ssh/auth* ~root/.ssh
+			  yum install epel-release wget -y
+			  setenforce 0
+			  wget https://github.com/prometheus/prometheus/releases/download/v2.15.1/prometheus-2.15.1.linux-amd64.tar.gz
+			  useradd --no-create-home --shell /bin/false prometheus
+			  mkdir /etc/prometheus
+			  mkdir /var/lib/prometheus
+			  chown prometheus:prometheus /etc/prometheus
+			  chown prometheus:prometheus /var/lib/prometheus
+			  tar -xvzf prometheus-2.15.1.linux-amd64.tar.gz
+			  mv prometheus-2.15.1.linux-amd64 prometheuspackage
+			  cp prometheuspackage/prometheus /usr/local/bin/
+			  cp prometheuspackage/promtool /usr/local/bin/
+			  chown prometheus:prometheus /usr/local/bin/prometheus
+			  chown prometheus:prometheus /usr/local/bin/promtool
+			  cp -r prometheuspackage/consoles /etc/prometheus
+			  cp -r prometheuspackage/console_libraries /etc/prometheus
+			  chown -R prometheus:prometheus /etc/prometheus/consoles
+			  chown -R prometheus:prometheus /etc/prometheus/console_libraries
+			  cp /vagrant/prometheus.yml /etc/prometheus/prometheus.yml
+			  chown prometheus:prometheus /etc/prometheus/prometheus.yml
+			  cp -f /vagrant/prometheus.service /etc/systemd/system/prometheus.service
+			  systemctl daemon-reload
+			  systemctl start prometheus
+			  systemctl status prometheus
+			  systemctl stop firewalld
+			  systemctl disable firewalld
+			  wget https://github.com/prometheus/node_exporter/releases/download/v0.18.1/node_exporter-0.18.1.linux-amd64.tar.gz
+			  tar -xvzf node_exporter-0.18.1.linux-amd64.tar.gz
+			  useradd -rs /bin/false nodeusr
+			  mv node_exporter-0.18.1.linux-amd64/node_exporter /usr/local/bin/
+			  cp /vagrant/node_exporter.service /etc/systemd/system/node_exporter.service
+			  systemctl daemon-reload
+			  systemctl start node_exporter
+			  systemctl restart prometheus
+			  cp /vagrant/grafana.repo /etc/yum.repos.d/grafana.repo
+			  yum install grafana -y
+			  systemctl start grafana-server
+			  cp /vagrant/influxdb.repo /etc/yum.repos.d/influxdb.repo
+			  rm -f /etc/telegraf/telegraf.conf
+			  yum install influxdb telegraf -y
+			  cp /vagrant/telegraf.conf /etc/telegraf/telegraf.conf
+			  systemctl start influxdb
+			  systemctl start telegraf
+			  mkdir /var/lib/grafana/dashboards
+			  cp /vagrant/Prometheus.json /var/lib/grafana/dashboards/
+			  cp /vagrant/Influx.json /var/lib/grafana/dashboards/
+			  cp /vagrant/Prometheus-db.yaml /etc/grafana/provisioning/dashboards/
+			  mv /etc/grafana/grafana.ini /etc/grafana/grafana.ini.bak
+			  cp /vagrant/grafana.ini /etc/grafana/grafana.ini
+			  cp /vagrant/datasources.yaml /etc/grafana/provisioning/datasources/
+			  systemctl restart grafana-server
+
+			  
+
+			  
+
+		SHELL
+		  
+		  
+		  
+		  
+		  
+	
+	  
+  ####
+  
+end
+
+
