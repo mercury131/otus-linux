@@ -101,8 +101,8 @@ config.vm.provision "shell", inline: <<-SHELL
 			  yum install grafana -y
 			  systemctl start grafana-server
 			  cp /vagrant/influxdb.repo /etc/yum.repos.d/influxdb.repo
-			  rm -f /etc/telegraf/telegraf.conf
 			  yum install influxdb telegraf -y
+			  rm -f /etc/telegraf/telegraf.conf
 			  cp /vagrant/telegraf.conf /etc/telegraf/telegraf.conf
 			  systemctl start influxdb
 			  systemctl start telegraf

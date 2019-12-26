@@ -65,210 +65,191 @@ http://192.168.11.101:3000/
 
 Откройте дашборды Prometheus и Influx
 
+Добавленные datasources
 ![Datasources](https://raw.githubusercontent.com/mercury131/otus-linux/master/lesson13/datasources.PNG)
 
+Дашборд InfluxDB
 ![Influx dashboard](https://raw.githubusercontent.com/mercury131/otus-linux/master/lesson13/influx.PNG)
 
+Дашборд Prometheus
 ![Prometheus dashboard](https://raw.githubusercontent.com/mercury131/otus-linux/master/lesson13/prometheus.PNG)
 
 # Описание выполнения данного задания.
 
-Устанавливаем необходимые пакеты:
+Установка Prometheus.
 
-```
-yum install docker docker-compose -y
-yum install epel-release -y
-yum install docker-compose -y
-```
-
-Отключаем SELinux чтобы прокинуть volume в контейнер
+Отключаем SElinux
 
 ```
 setenforce 0
 ```
 
-Запускаем Docker
+Загружаем Prometheus
 
 ```
-systemctl start docker
+wget https://github.com/prometheus/prometheus/releases/download/v2.15.1/prometheus-2.15.1.linux-amd64.tar.gz
 ```
 
-
-Создаем сеть для контейнеров
-
-```
-docker network create testservice
-```
-
-Запускаем docker-compose
+Создаем пользователя для Prometheus , создаем каталоги, корерктируем права доступа, распаковываем Prometheus и копируем в систему и импортируем конфиг
 
 ```
-cd /vagrant/laravel-app
-docker-compose up -d
+useradd --no-create-home --shell /bin/false prometheus
+mkdir /etc/prometheus
+mkdir /var/lib/prometheus
+chown prometheus:prometheus /etc/prometheus
+chown prometheus:prometheus /var/lib/prometheus
+tar -xvzf prometheus-2.15.1.linux-amd64.tar.gz
+mv prometheus-2.15.1.linux-amd64 prometheuspackage
+cp prometheuspackage/prometheus /usr/local/bin/
+cp prometheuspackage/promtool /usr/local/bin/
+chown prometheus:prometheus /usr/local/bin/prometheus
+chown prometheus:prometheus /usr/local/bin/promtool
+cp -r prometheuspackage/consoles /etc/prometheus
+cp -r prometheuspackage/console_libraries /etc/prometheus
+chown -R prometheus:prometheus /etc/prometheus/consoles
+chown -R prometheus:prometheus /etc/prometheus/console_libraries
+cp /vagrant/prometheus.yml /etc/prometheus/prometheus.yml
+chown prometheus:prometheus /etc/prometheus/prometheus.yml
 ```
 
-Запускаем контейнер с python
+Конфиг Prometheus:
 
 ```
-docker run -d -p 4000:8081 mercury131/otus:hellootus
+global:
+  scrape_interval: 10s
+
+scrape_configs:
+  - job_name: 'prometheus_master'
+    scrape_interval: 5s
+    static_configs:
+      - targets: ['localhost:9090']
+  - job_name: 'node_exporter_centos'
+    scrape_interval: 5s
+    static_configs:
+      - targets: ['192.168.11.101:9100']
 ```
 
-Описание процесса сборки и отправки его в Docker Hub. 
-
-Копируем папку с приложением и файлами для сборки образа
+Копируем systemd юнит для prometheus и запускаем его, также отключим firewall, чтобы открыть порты (Внимание, на PROD окружении так делать нельзя, необходимо создавать отдельные правила)
 
 ```
-cp -r /vagrant/docker-build ./
-cd docker-build
+cp -f /vagrant/prometheus.service /etc/systemd/system/prometheus.service
+systemctl daemon-reload
+systemctl start prometheus
+systemctl status prometheus
+systemctl stop firewalld
+systemctl disable firewalld
 ```
 
-Запускаем процесс сборки:
+Теперь Prometheus доступен по ссылке - http://192.168.11.101:9090/graph
+
+Переходим к установке node_exporter, который будет заливать метрики в prometheus
+
+Загружаем архив с node_exporter, создаем для него пользователя, копируем в систему, создаем systemd юнит:
 
 ```
-docker build ./ --tag=hellootus 
+wget https://github.com/prometheus/node_exporter/releases/download/v0.18.1/node_exporter-0.18.1.linux-amd64.tar.gz
+tar -xvzf node_exporter-0.18.1.linux-amd64.tar.gz
+useradd -rs /bin/false nodeusr
+mv node_exporter-0.18.1.linux-amd64/node_exporter /usr/local/bin/
+cp /vagrant/node_exporter.service /etc/systemd/system/node_exporter.service
+systemctl daemon-reload
+systemctl start node_exporter
 ```
 
-Логинимся на Docker Hub
+Node exporter доступен по ссылке - http://192.168.11.101:9100/metrics
+
+Таргеты Prometheus доступны по ссылке - http://192.168.11.101:9090/targets
+
+Графики в prometheus можно построить по ссылке - http://192.168.11.101:9090/graph
+
+
+Установка связки Influx / Telegraf / Grafana
+
+Добавляем репозиторий Grafana
 
 ```
-docker login
+cp /vagrant/grafana.repo /etc/yum.repos.d/grafana.repo
 ```
 
-Помечаем собранный образ тэгом
+Устанавливаем и запускаем Grafana
 
 ```
-docker tag hellootus mercury131/otus:hellootus
+yum install grafana -y
+systemctl start grafana-server
 ```
 
-Загружаем образ:
+Добавляем репозиторий InfluxDB
 
 ```
-docker push mercury131/otus:hellootus
+cp /vagrant/influxdb.repo /etc/yum.repos.d/influxdb.repo
 ```
 
-Теперь можно запустить собранный образ из нашего Docker Hub
+Устанавливаем InfluxDB и Telegraf:
 
 ```
-docker run -d -p 4001:8081 mercury131/otus:hellootus
+cp /vagrant/influxdb.repo /etc/yum.repos.d/influxdb.repo
+yum install influxdb telegraf -y
 ```
 
-Проверяем что приложение внутри контейнера работает:
+Заменяем конфиг telegraf
 
 ```
-[root@testrpm ~]# docker ps
-CONTAINER ID        IMAGE                       COMMAND                  CREATED             STATUS              PORTS                    NAMES
-c5255df21529        mercury131/otus:hellootus   "/usr/bin/dumb-ini..."   5 minutes ago       Up 5 minutes        0.0.0.0:4001->8081/tcp   gracious_turing
+cp /vagrant/telegraf.conf /etc/telegraf/telegraf.conf
 ```
 
-```
-[root@testrpm ~]# curl http://localhost:4001
-Hello OTUS!
-```
-
-Приложение собрано и работает.
-
-Теперь соберем контейнер nginx, базой которого будет alpine linux.
-
-переходим в каталог /vagrant/docker-build-nginx
+Запускаем сервисы InfluxDB и Telegraf:
 
 ```
-cd /vagrant/docker-build-nginx
+systemctl start influxdb
+systemctl start telegraf
 ```
 
-Для  сборки используется следующий dockerfile:
+На этом этапе метрики системы уже собираются в InfluxDB, теперь перейдем к настройке Grafana.
+
+Создаем каталог для импорта дашбордов:
 
 ```
-FROM alpine
-
-RUN apk update && apk add nginx && apk del *-dev build-base autoconf libtool && rm -rf /var/cache/apk/* /tmp/*
-
-RUN  mkdir -p /usr/share/nginx/html && mkdir -p /run/nginx && mkdir -p /var/lib/nginx/tmp
-
-COPY index.html /usr/share/nginx/html/
-
-COPY default.conf /etc/nginx/conf.d/
-
-EXPOSE 80
-
-CMD ["nginx", "-g", "daemon off;"]
+mkdir /var/lib/grafana/dashboards
 ```
 
-Запустим сборку образа:
+Копируем дашборды:
 
 ```
-docker build -t alpine-nginx:latest .
+cp /vagrant/Prometheus.json /var/lib/grafana/dashboards/
+cp /vagrant/Influx.json /var/lib/grafana/dashboards/
 ```
 
-Теперь отправим образ в docker hub
-
-Логинимся на Docker Hub
+Копируем конфигурации datasources, в которых указаны подключения к Prometheus и InfluxDB и конфиг для импорта дашбордов
 
 ```
-docker login
+cp /vagrant/Prometheus-db.yaml /etc/grafana/provisioning/dashboards/
+cp /vagrant/datasources.yaml /etc/grafana/provisioning/datasources/
 ```
 
-Помечаем собранный образ тэгом
+Скопируем конфиг Grafana, в котором активирован provisioning:
 
 ```
-docker tag alpine-nginx mercury131/alpine-nginx:latest
+mv /etc/grafana/grafana.ini /etc/grafana/grafana.ini.bak
+cp /vagrant/grafana.ini /etc/grafana/grafana.ini
 ```
 
-Загружаем образ:
+Перезапускаем Grafana
 
 ```
-docker push mercury131/alpine-nginx:latest
+systemctl restart grafana-server
 ```
 
-Теперь можно запустить собранный образ из нашего Docker Hub
+Теперь можно перейти по ссылке http://192.168.11.101:3000/
 
-```
-docker run -d -p 8080:80 mercury131/alpine-nginx:latest
-```
+Авторизуйтесь в Grafana с помощью стандартного логина и пароля admin/admin
 
-Открываем в браузере страницу http://192.168.11.101:8080/ и видим запущенный контейнер.
+В папке Monitoring будут доступны импортированные дашборды:
 
-Теперь ответим на вопрос чем отличается образ от контейнера? 
+Добавленные datasources
+![Datasources](https://raw.githubusercontent.com/mercury131/otus-linux/master/lesson13/datasources.PNG)
 
-Образ, это сущность состоящая из слоев, которые мы выполняем при сборке. 
+Дашборд InfluxDB
+![Influx dashboard](https://raw.githubusercontent.com/mercury131/otus-linux/master/lesson13/influx.PNG)
 
-Образ можно использовать или переиспользовать при сборке других образов, либо для запуска, тогда мы получаем другую сущность контейнер.
-
-Контейнер же является запущенным образом, м него можно вносить изменения, но нужно понимать что это stateless сущность, при перезапуске контейнера все внесенные изменения будут потеряны (если изменения вносились не на подключенный volume)
-
-Итого - изменения можно и нужно вносить в образ, из которого потом тиражировать контейнеры.
-
-Можно ли собрать ядро Linux в контейнере? 
-
-Можно, в каталоге otus-linux/lesson9/docker-build-kernel/ , Dockerfile выглядит следующим образом:
-
-```
-
-FROM centos:centos7
-
-RUN yum install openssl ncurses-devel make gcc bc openssl-devel elfutils-libelf-devel rpm-build wget flex bison rsync -y
-
-COPY .config /tmp/.config
-
-RUN  wget https://cdn.kernel.org/pub/linux/kernel/v5.x/linux-5.3.8.tar.xz && tar xvf linux-5.3.8.tar.xz
-
-RUN	 cd /linux-5.3.8 && cp /tmp/.config /linux-5.3.8/.config && cat  /tmp/.config && yes "" | make oldconfig &&	 make rpm-pkg 
-
-
-CMD ["/bin/sh"]
-
-```
-
-Обратите внимание, что в контейнере нет каталога /boot/ , и взять конфиг оттуда не получится. 
-
-Поэтому берем файл с "настоящей Centos 7 " и просто копируем его в контейнер при сборке.
-
-Запускаем сборку:
-
-```
-docker build -t build-kernel:latest .
-```
-
-После ее завершения собранные RPM будут внутри контейнера, вытащить их можно командой docker cp
-
-Каталог с собранными RPM /linux-5.3.8/rpmbuild/RPMS/x86_64/
-
+Дашборд Prometheus
+![Prometheus dashboard](https://raw.githubusercontent.com/mercury131/otus-linux/master/lesson13/prometheus.PNG)
