@@ -113,6 +113,10 @@ systemctl start docker
 setfacl -m user:admin:rw /var/run/docker.sock
 ```
 
+Убеждаемся что теперь пользователь может работать с докером:
+
+![Docker permission](https://raw.githubusercontent.com/mercury131/otus-linux/master/lesson14/docker-acl.PNG)
+
 Теперь создадим следующие правило для Policykit, которое даст пользователю admin возможность управлять сервисом докера:
 
 ```
@@ -148,3 +152,7 @@ wget https://copr.fedorainfracloud.org/coprs/jsynacek/systemd-backports-for-cent
 ```
 yum update systemd
 ```
+
+Проверяем что пользователь может управлять сервисом:
+
+![Docker service permission](https://raw.githubusercontent.com/mercury131/otus-linux/master/lesson14/docker-service.PNG)
