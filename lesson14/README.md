@@ -4,15 +4,14 @@
 - **VirtualBox** - ПО для создания виртуальных окружений
 - **Vagrant** - ПО для конфигурирования/шаблонизирования виртуальных машин
 - **Git** - система контроля версий
-- **InfluxDB** - timescale база данных
-- **Telegraf** - система сбора и отправки метрик
-- **Prometheus** - система мониторинга
-- **Grafana** - система визуализации метрик
+- **PAM** - подключаемые модули аутентификации
+- **Policykit** - библиотека, используется для предоставления непривилегированным процессам возможности выполнения действий, требующих прав администратора
+
 
 
 Используемые репозитории:
 - **https://github.com/mercury131/otus-linux** - репозиторий для выполнения домашних заданий OTUS
-- **https://github.com/mercury131/otus-linux/tree/master/lesson13** - ссылка на данное домашнее задание
+- **https://github.com/mercury131/otus-linux/tree/master/lesson14** - ссылка на данное домашнее задание
 
 
  
@@ -20,16 +19,15 @@
 
 В рамках данного домашнего задания выполнено:
 
-- 1) С помощью Grafana настроен дашборд с 4-мя графиками (процессор, память, диски, сеть)
-- 2) Установлена система мониторинга Prometheus, в которую настроен сбор метрик
-- 3) Установлена InfluxDB, в которую настроен сбор метрик
-- 4) Процесс автоматизирован с помощью vagrantfile
+- 1) Запретить всем пользователям, кроме группы admin логин в выходные (суббота и воскресенье), без учета праздников
+- 2) дать конкретному пользователю права работать с докером и возможность рестартить докер сервис
+
 
 
 
 
 Используемые файлы и директории:
-- В директории lesson13 расположен Vagrantfile с образом Centos 7 и автоматическими шагами развертывания:
+- В директории lesson14 расположен Vagrantfile с образом Centos 7 и автоматическими шагами развертывания:
 
 
 
@@ -50,206 +48,103 @@ vagrant plugin install vagrant-reload
 Для запуска Vagrantfile автоматизированными шагами выполните:
 
 ```
-cd otus-linux/lesson13
+cd otus-linux/lesson14
 vagrant up 
 vagrant ssh
 ```
 
-Откройте следующие страницы в браузере для проверки:
+Установите пароль пользователям admin и test
 
 ```
-http://192.168.11.101:3000/
+passwd admin
+passwd test
 ```
 
-Авторизуйтесь в Grafana с помощью стандартного логина и пароля admin/admin
+Попробуйте авторизоваться пользователем test
 
-Откройте дашборды Prometheus и Influx
+Попробуйте авторизоваться пользователем root в выходной день.
 
-Добавленные datasources
-![Datasources](https://raw.githubusercontent.com/mercury131/otus-linux/master/lesson13/datasources.PNG)
+Описание выполнения данного задания:
 
-Дашборд InfluxDB
-![Influx dashboard](https://raw.githubusercontent.com/mercury131/otus-linux/master/lesson13/influx.PNG)
-
-Дашборд Prometheus
-![Prometheus dashboard](https://raw.githubusercontent.com/mercury131/otus-linux/master/lesson13/prometheus.PNG)
-
-# Описание выполнения данного задания.
-
-Установка Prometheus.
-
-Отключаем SElinux
+Добавляем группы, которым будет разрешен логин в систему:
 
 ```
-setenforce 0
+echo "root" >  /etc/login.allowed
+echo "wheel" >>  /etc/login.allowed
+echo "admin" >>  /etc/login.allowed
 ```
 
-Загружаем Prometheus
+Добавляем PAM правило с помощью которого вход в систему будет разрешен только из групп указанных выше:
 
 ```
-wget https://github.com/prometheus/prometheus/releases/download/v2.15.1/prometheus-2.15.1.linux-amd64.tar.gz
+sed -i '1iauth required pam_listfile.so onerr=fail item=group sense=allow file=/etc/login.allowed' /etc/pam.d/system-auth
 ```
 
-Создаем пользователя для Prometheus , создаем каталоги, корерктируем права доступа, распаковываем Prometheus и копируем в систему и импортируем конфиг
+Теперь настроим правило запрещающее логин в систему в выходные дни всем пользователям, кроме admin:
 
 ```
-useradd --no-create-home --shell /bin/false prometheus
-mkdir /etc/prometheus
-mkdir /var/lib/prometheus
-chown prometheus:prometheus /etc/prometheus
-chown prometheus:prometheus /var/lib/prometheus
-tar -xvzf prometheus-2.15.1.linux-amd64.tar.gz
-mv prometheus-2.15.1.linux-amd64 prometheuspackage
-cp prometheuspackage/prometheus /usr/local/bin/
-cp prometheuspackage/promtool /usr/local/bin/
-chown prometheus:prometheus /usr/local/bin/prometheus
-chown prometheus:prometheus /usr/local/bin/promtool
-cp -r prometheuspackage/consoles /etc/prometheus
-cp -r prometheuspackage/console_libraries /etc/prometheus
-chown -R prometheus:prometheus /etc/prometheus/consoles
-chown -R prometheus:prometheus /etc/prometheus/console_libraries
-cp /vagrant/prometheus.yml /etc/prometheus/prometheus.yml
-chown prometheus:prometheus /etc/prometheus/prometheus.yml
+echo 'login & ssh;*;*!admin;Wd0900-1700' >> /etc/security/time.conf
 ```
 
-Конфиг Prometheus:
+Создаем тестовых пользователей для проверки:
 
 ```
-global:
-  scrape_interval: 10s
+adduser admin
+adduser test
 
-scrape_configs:
-  - job_name: 'prometheus_master'
-    scrape_interval: 5s
-    static_configs:
-      - targets: ['localhost:9090']
-  - job_name: 'node_exporter_centos'
-    scrape_interval: 5s
-    static_configs:
-      - targets: ['192.168.11.101:9100']
+passwd admin
+passwd test
 ```
 
-Копируем systemd юнит для prometheus и запускаем его, также отключим firewall, чтобы открыть порты (Внимание, на PROD окружении так делать нельзя, необходимо создавать отдельные правила)
+Попробуйте авторизоваться пользователем test
+
+Попробуйте авторизоваться пользователем root в выходной день.
+
+Теперь установим докер:
 
 ```
-cp -f /vagrant/prometheus.service /etc/systemd/system/prometheus.service
-systemctl daemon-reload
-systemctl start prometheus
-systemctl status prometheus
-systemctl stop firewalld
-systemctl disable firewalld
+yum install docker -y
+systemctl start docker
 ```
 
-Теперь Prometheus доступен по ссылке - http://192.168.11.101:9090/graph
-
-Переходим к установке node_exporter, который будет заливать метрики в prometheus
-
-Загружаем архив с node_exporter, создаем для него пользователя, копируем в систему, создаем systemd юнит:
+Разрешим пользователю admin работать с докером:
 
 ```
-wget https://github.com/prometheus/node_exporter/releases/download/v0.18.1/node_exporter-0.18.1.linux-amd64.tar.gz
-tar -xvzf node_exporter-0.18.1.linux-amd64.tar.gz
-useradd -rs /bin/false nodeusr
-mv node_exporter-0.18.1.linux-amd64/node_exporter /usr/local/bin/
-cp /vagrant/node_exporter.service /etc/systemd/system/node_exporter.service
-systemctl daemon-reload
-systemctl start node_exporter
+setfacl -m user:admin:rw /var/run/docker.sock
 ```
 
-Node exporter доступен по ссылке - http://192.168.11.101:9100/metrics
-
-Таргеты Prometheus доступны по ссылке - http://192.168.11.101:9090/targets
-
-Графики в prometheus можно построить по ссылке - http://192.168.11.101:9090/graph
-
-
-Установка связки Influx / Telegraf / Grafana
-
-Добавляем репозиторий Grafana
+Теперь создадим следующие правило для Policykit, которое даст пользователю admin возможность управлять сервисом докера:
 
 ```
-cp /vagrant/grafana.repo /etc/yum.repos.d/grafana.repo
+polkit.addRule(function(action, subject) {
+    if (action.id == "org.freedesktop.systemd1.manage-units" &&
+        action.lookup("unit") == "docker.service" &&
+        subject.user == "admin") {
+        return polkit.Result.YES;
+    }
+});
 ```
 
-Устанавливаем и запускаем Grafana
+Копируем правило:
 
 ```
-yum install grafana -y
-systemctl start grafana-server
+cp /vagrant/51-manage-docker-daemon.rules /etc/polkit-1/rules.d/
 ```
 
-Добавляем репозиторий InfluxDB
+Тут стоит отметить что action.lookup("unit") работает на systemd версии 226 и выше, в centos 7 используется версия 219. 
+
+Есть пропатченная версия от facebook, установить ее можно так:
+
+Переводим selinux в режим permissive
+
+Далее выполняем:
 
 ```
-cp /vagrant/influxdb.repo /etc/yum.repos.d/influxdb.repo
+wget https://copr.fedorainfracloud.org/coprs/jsynacek/systemd-backports-for-centos-7/repo/epel-7/jsynacek-systemd-backports-for-centos-7-epel-7.repo -O /etc/yum.repos.d/jsynacek-systemd-centos-7.repo
 ```
 
-Устанавливаем InfluxDB и Telegraf:
+Обновляем systemd:
 
 ```
-cp /vagrant/influxdb.repo /etc/yum.repos.d/influxdb.repo
-yum install influxdb telegraf -y
+yum update systemd
 ```
-
-Заменяем конфиг telegraf
-
-```
-cp /vagrant/telegraf.conf /etc/telegraf/telegraf.conf
-```
-
-Запускаем сервисы InfluxDB и Telegraf:
-
-```
-systemctl start influxdb
-systemctl start telegraf
-```
-
-На этом этапе метрики системы уже собираются в InfluxDB, теперь перейдем к настройке Grafana.
-
-Создаем каталог для импорта дашбордов:
-
-```
-mkdir /var/lib/grafana/dashboards
-```
-
-Копируем дашборды:
-
-```
-cp /vagrant/Prometheus.json /var/lib/grafana/dashboards/
-cp /vagrant/Influx.json /var/lib/grafana/dashboards/
-```
-
-Копируем конфигурации datasources, в которых указаны подключения к Prometheus и InfluxDB и конфиг для импорта дашбордов
-
-```
-cp /vagrant/Prometheus-db.yaml /etc/grafana/provisioning/dashboards/
-cp /vagrant/datasources.yaml /etc/grafana/provisioning/datasources/
-```
-
-Скопируем конфиг Grafana, в котором активирован provisioning:
-
-```
-mv /etc/grafana/grafana.ini /etc/grafana/grafana.ini.bak
-cp /vagrant/grafana.ini /etc/grafana/grafana.ini
-```
-
-Перезапускаем Grafana
-
-```
-systemctl restart grafana-server
-```
-
-Теперь можно перейти по ссылке http://192.168.11.101:3000/
-
-Авторизуйтесь в Grafana с помощью стандартного логина и пароля admin/admin
-
-В папке Monitoring будут доступны импортированные дашборды:
-
-Добавленные datasources
-![Datasources](https://raw.githubusercontent.com/mercury131/otus-linux/master/lesson13/datasources.PNG)
-
-Дашборд InfluxDB
-![Influx dashboard](https://raw.githubusercontent.com/mercury131/otus-linux/master/lesson13/influx.PNG)
-
-Дашборд Prometheus
-![Prometheus dashboard](https://raw.githubusercontent.com/mercury131/otus-linux/master/lesson13/prometheus.PNG)

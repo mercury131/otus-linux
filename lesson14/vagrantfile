@@ -2,7 +2,7 @@
 # vim: set ft=ruby :
 
 MACHINES = {
-  :testmonitoring => {
+  :testpam => {
         :box_name => "cdaf/CentOSLVM",
         :ip_addr => '192.168.11.101',
 	:disks => {
@@ -64,6 +64,18 @@ config.vm.provision "shell", inline: <<-SHELL
               mkdir -p ~root/.ssh
               cp ~vagrant/.ssh/auth* ~root/.ssh
 			  yum install epel-release wget -y
+			  yum update -y
+			  echo "root" >  /etc/login.allowed
+			  echo "wheel" >>  /etc/login.allowed
+			  echo "admin" >>  /etc/login.allowed
+			  sed -i '1iauth required pam_listfile.so onerr=fail item=group sense=allow file=/etc/login.allowed' /etc/pam.d/system-auth
+			  echo 'login & ssh;*;*!admin;Wd0900-1700' >> /etc/security/time.conf
+			  adduser admin
+			  adduser test
+			  yum install docker -y
+			  systemctl start docker
+			  setfacl -m user:admin:rw /var/run/docker.sock
+			  cp /vagrant/51-manage-docker-daemon.rules /etc/polkit-1/rules.d/
 
 
 			  
