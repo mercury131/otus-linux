@@ -4,12 +4,12 @@
 - **VirtualBox** - ПО для создания виртуальных окружений
 - **Vagrant** - ПО для конфигурирования/шаблонизирования виртуальных машин
 - **Git** - система контроля версий
-- **Ansible** - система управления конфигурациями
+- **Bacula** - система резервного копирования и восстановления
 
 
 Используемые репозитории:
 - **https://github.com/mercury131/otus-linux** - репозиторий для выполнения домашних заданий OTUS
-- **https://github.com/mercury131/otus-linux/tree/master/lesson10** - ссылка на данное домашнее задание
+- **https://github.com/mercury131/otus-linux/tree/master/lesson16** - ссылка на данное домашнее задание
 
 
  
@@ -17,20 +17,24 @@
 
 В рамках данного домашнего задания выполнено:
 
-Подготовить стенд на Vagrant как минимум с одним сервером. На этом сервере используя Ansible необходимо развернуть nginx со следующими условиями:
-- необходимо использовать модуль yum/apt
-- конфигурационные файлы должны быть взяты из шаблона jinja2 с перемененными
-- после установки nginx должен быть в режиме enabled в systemd
-- должен быть использован notify для старта nginx после установки
-- сайт должен слушать на нестандартном порту - 8080, для этого использовать переменные в Ansible
-* Сделать все это с использованием Ansible роли
+Настраиваем бэкапы
+Настроить стенд Vagrant с двумя виртуальными машинами server и client.
+
+Настроить политику бэкапа директории /etc с клиента:
+1) Полный бэкап - раз в день
+2) Инкрементальный - каждые 10 минут
+3) Дифференциальный - каждые 30 минут
+
+Запустить систему на два часа. Для сдачи ДЗ приложить list jobs, list files jobid=<id>
+и сами конфиги bacula-*
+
+* Настроить доп. Опции - сжатие, шифрование, дедупликация 
 
 
 
 
 Используемые файлы и директории:
-- В директории lesson10 расположен Vagrantfile с образом Centos 7 и автоматическими шагами развертывания
-- В директории lesson10/ansible , расположены playbook, inventory файл и роль по установке nginx, в каталоге lesson10/ansible/my-nginx
+- В директории lesson16 расположен Vagrantfile с образом Centos 7 и автоматическими шагами развертывания
 
 # Как проверить домашнее задание?
 
@@ -49,188 +53,601 @@ vagrant plugin install vagrant-reload
 Для запуска Vagrantfile автоматизированными шагами выполните:
 
 ```
-cd otus-linux/lesson10
+cd otus-linux/lesson16
 vagrant up 
 vagrant ssh
 ```
 
-Откройте следующие страницы в браузере для проверки:
+Подождите 2 часа
+
+Выполните команду list jobs
 
 ```
-http://192.168.11.102:8080
+
+*list jobs
++-------+------------------+---------------------+------+-------+----------+------------+-----------+
+| JobId | Name             | StartTime           | Type | Level | JobFiles | JobBytes   | JobStatus |
++-------+------------------+---------------------+------+-------+----------+------------+-----------+
+|     1 | BackupLocalFiles | 2020-01-18 01:18:08 | B    | F     |    2,350 | 11,268,848 | T         |
+|     2 | BackupLocalFiles | 2020-01-18 01:20:02 | B    | I     |        0 |          0 | T         |
+|     3 | BackupClientHost | 2020-01-18 01:20:06 | B    | F     |    2,350 | 11,268,848 | T         |
+|     4 | BackupLocalFiles | 2020-01-18 01:30:02 | B    | D     |        0 |          0 | T         |
+|     5 | BackupLocalFiles | 2020-01-18 01:30:05 | B    | I     |        0 |          0 | T         |
+|     6 | BackupClientHost | 2020-01-18 01:30:08 | B    | D     |        0 |          0 | T         |
+|     7 | BackupClientHost | 2020-01-18 01:30:11 | B    | I     |        0 |          0 | T         |
+|     8 | BackupLocalFiles | 2020-01-18 01:40:02 | B    | I     |        0 |          0 | T         |
+|     9 | BackupClientHost | 2020-01-18 01:40:06 | B    | I     |        0 |          0 | T         |
+|    10 | BackupLocalFiles | 2020-01-18 01:50:03 | B    | I     |        0 |          0 | T         |
+|    11 | BackupClientHost | 2020-01-18 01:50:06 | B    | I     |        0 |          0 | T         |
+|    12 | BackupLocalFiles | 2020-01-18 02:00:03 | B    | D     |        0 |          0 | T         |
+|    13 | BackupLocalFiles | 2020-01-18 02:00:06 | B    | I     |        0 |          0 | T         |
+|    14 | BackupClientHost | 2020-01-18 02:00:09 | B    | D     |        0 |          0 | T         |
+|    15 | BackupClientHost | 2020-01-18 02:00:13 | B    | I     |        0 |          0 | T         |
+|    16 | BackupLocalFiles | 2020-01-18 02:10:03 | B    | I     |        0 |          0 | T         |
+|    17 | BackupClientHost | 2020-01-18 02:10:06 | B    | I     |        0 |          0 | T         |
+|    18 | BackupLocalFiles | 2020-01-18 02:20:02 | B    | I     |        0 |          0 | T         |
+|    19 | BackupClientHost | 2020-01-18 02:20:05 | B    | I     |        0 |          0 | T         |
+|    20 | BackupLocalFiles | 2020-01-18 02:30:02 | B    | D     |        0 |          0 | T         |
+|    21 | BackupLocalFiles | 2020-01-18 02:30:05 | B    | I     |        0 |          0 | T         |
+|    22 | BackupClientHost | 2020-01-18 02:30:08 | B    | D     |        0 |          0 | T         |
+|    23 | BackupClientHost | 2020-01-18 02:30:13 | B    | I     |        0 |          0 | T         |
+|    24 | BackupLocalFiles | 2020-01-18 02:40:02 | B    | I     |        0 |          0 | T         |
+|    25 | BackupClientHost | 2020-01-18 02:40:05 | B    | I     |        0 |          0 | T         |
+|    26 | BackupLocalFiles | 2020-01-18 02:50:02 | B    | I     |        0 |          0 | T         |
+|    27 | BackupClientHost | 2020-01-18 02:50:05 | B    | I     |        0 |          0 | T         |
+|    28 | BackupLocalFiles | 2020-01-18 03:00:02 | B    | D     |        0 |          0 | T         |
+|    29 | BackupLocalFiles | 2020-01-18 03:00:05 | B    | I     |        0 |          0 | T         |
+|    30 | BackupClientHost | 2020-01-18 03:00:09 | B    | D     |        0 |          0 | T         |
+|    31 | BackupClientHost | 2020-01-18 03:00:12 | B    | I     |        0 |          0 | T         |
+|    32 | BackupLocalFiles | 2020-01-18 03:10:02 | B    | I     |        0 |          0 | T         |
+|    33 | BackupClientHost | 2020-01-18 03:10:06 | B    | I     |        0 |          0 | T         |
+|    34 | BackupClientHost | 2020-01-18 03:11:05 | B    | I     |        0 |          0 | T         |
++-------+------------------+---------------------+------+-------+----------+------------+-----------+
+
+```
+
+Выполните команду list files jobid=3
+
+Вывод будет примерно таким:
+```
+| /etc/selinux/targeted/active/modules/ |
+| /etc/selinux/targeted/active/ |
+| /etc/selinux/targeted/active/file_contexts |
+| /etc/selinux/targeted/active/file_contexts.homedirs |
+| /etc/selinux/targeted/active/seusers |
+| /etc/selinux/targeted/active/commit_num |
+| /etc/selinux/targeted/active/homedir_template |
+| /etc/selinux/targeted/active/policy.kern |
+| /etc/selinux/targeted/active/users_extra |
+| /etc/selinux/targeted/active/seusers.linked |
+| /etc/selinux/targeted/active/users_extra.linked |
+| /etc/selinux/targeted/active/policy.linked |
+| /etc/selinux/final/ |
+| /etc/plymouth/ |
+| /etc/plymouth/plymouthd.conf |
+| /etc/gnupg/ |
+| /etc/tuned/ |
+| /etc/tuned/active_profile |
+| /etc/tuned/bootcmdline |
+| /etc/tuned/profile_mode |
+| /etc/tuned/tuned-main.conf |
+| /etc/tuned/recommend.d/ |
+| /etc/firewalld/ |
+| /etc/firewalld/firewalld.conf |
+| /etc/firewalld/lockdown-whitelist.xml |
+| /etc/firewalld/helpers/ |
+| /etc/firewalld/icmptypes/ |
+| /etc/firewalld/ipsets/ |
+| /etc/firewalld/services/ |
+| /etc/firewalld/zones/ |
+| /etc/firewalld/zones/public.xml |
+| /etc/firewalld/zones/public.xml.old |
+| /etc/audisp/ |
+| /etc/audisp/audispd.conf |
+| /etc/audisp/plugins.d/ |
+| /etc/audisp/plugins.d/af_unix.conf |
+| /etc/audisp/plugins.d/syslog.conf |
+| /etc/audit/ |
+| /etc/audit/audit-stop.rules |
+| /etc/audit/auditd.conf |
+| /etc/audit/audit.rules |
+| /etc/audit/rules.d/ |
+| /etc/audit/rules.d/audit.rules |
+| /etc/kernel/postinst.d/ |
+| /etc/kernel/postinst.d/51-dracut-rescue-postinst.sh |
+| /etc/kernel/postinst.d/vboxadd |
+| /etc/kernel/prerm.d/ |
+| /etc/kernel/prerm.d/vboxadd |
+| /etc/kernel/ |
+| /etc/sudoers.d/ |
+| /etc/sudoers.d/proxy |
+| /etc/bacula/ |
+| /etc/bacula/bacula-sd.conf |
+| /etc/bacula/bacula-dir.conf |
+| /etc/bacula/query.sql |
+| /etc/bacula/bacula-fd.conf |
+| /etc/bacula/bconsole.conf |
+| /etc/bacula/conf.d/ |
+| /etc/bacula/conf.d/pools.conf |
+| /etc/bacula/conf.d/filesets.conf |
+| /etc/bacula/conf.d/clients.conf |
+| /etc/logwatch/conf/ |
+| /etc/logwatch/conf/ignore.conf |
+| /etc/logwatch/conf/logwatch.conf |
+| /etc/logwatch/conf/override.conf |
+| /etc/logwatch/conf/logfiles/ |
+| /etc/logwatch/conf/logfiles/bacula.conf |
+| /etc/logwatch/conf/services/ |
+| /etc/logwatch/conf/services/bacula.conf |
+| /etc/logwatch/scripts/services/ |
+| /etc/logwatch/scripts/services/bacula |
+| /etc/logwatch/scripts/shared/ |
+| /etc/logwatch/scripts/shared/applybaculadate |
+| /etc/logwatch/scripts/ |
+| /etc/logwatch/ |
++----------+
++-------+------------------+---------------------+------+-------+----------+------------+-----------+
+| JobId | Name             | StartTime           | Type | Level | JobFiles | JobBytes   | JobStatus |
++-------+------------------+---------------------+------+-------+----------+------------+-----------+
+|     3 | BackupClientHost | 2020-01-18 01:20:06 | B    | F     |    2,350 | 11,268,848 | T         |
++-------+------------------+---------------------+------+-------+----------+------------+-----------+
+*
+
 ```
 
 # Описание выполнения данного задания.
 
-Устанавливаем необходимые пакеты:
+Устанавливаем необходимые пакеты на сервер:
 
 ```
 yum install epel-release -y
-yum install ansible vim -y
+yum install -y bacula-director bacula-storage bacula-console bacula-client mariadb-server
 ```
 
-Копируем SSH ключи на машину с Ansible:
+
+Запускаем mysql сервер
 
 ```
-cp /vagrant/id_rsa /home/vagrant/.ssh/
-cp /vagrant/id_rsa /root/.ssh/
+systemctl start mariadb
+systemctl enable mariadb
 ```
 
-Выставляем корректные права на SSH ключи
+Запускаем скрипты Bacula для создания БД
 
 ```
-chmod 0600 /root/.ssh/id_rsa
-chown vagrant:vagrant /home/vagrant/.ssh/id_rsa 
-chmod 0600 /home/vagrant/.ssh/id_rsa
+/usr/libexec/bacula/grant_mysql_privileges
+/usr/libexec/bacula/create_mysql_database -u root
+/usr/libexec/bacula/make_mysql_tables -u bacula
 ```
 
-Прописываем второй хост, куда будем ставить nginx в hosts, чтобы обеспечить связанность по dns имени:
+Подключаемся к БД Mysql и меняем пароль пользователя Bacula
 
 ```
-echo "192.168.11.102  web" >> /etc/hosts
+mysql -u root -p
+
+UPDATE mysql.user SET Password=PASSWORD('bacula_db_password') WHERE User='bacula';
+FLUSH PRIVILEGES;
 ```
 
-Создаем структуру каталогов для Ansible и копируем роль для установки nginx в необходимые директории:
-Роль копируем в домашние каталоги, для удобства при дебаге.
-```
-mkdir ~/ansible
-mkdir -p /etc/ansible/roles/
-mkdir -p /home/vagrant/.ansible/roles/
-mkdir -p /root/.ansible/roles/
-cp -r /vagrant/ansible/roles/ /etc/ansible/roles/
-cp -r /vagrant/ansible/roles /home/vagrant/.ansible/
-cp -r /vagrant/ansible/roles /root/.ansible/
-```
-
-Копируем Playbook и inventory файлы, для запуска роли, передачи переменной с портом nginx и указанием хостов из inventory
+Настроим работу Bacula с БД Mysql, выбрав 1
 
 ```
-cp /vagrant/ansible/playbook.yml /home/vagrant/playbook.yml
-cp /vagrant/ansible/inventory.yml /home/vagrant/.ansible/inventory.yml
+alternatives --config libbaccats.so
+There are 3 programs which provide 'libbaccats.so'.
+
+  SelectionCommand
+-----------------------------------------------
+   1   /usr/lib64/libbaccats-mysql.so
+   2   /usr/lib64/libbaccats-sqlite3.so
+*+ 3   /usr/lib64/libbaccats-postgresql.so
 ```
 
-В рамках сессии отключаем у ansible проверку на наличие ключей в known_hosts и добавляем отпечаток хоста web в known_hosts
+
+Создаем директории для Резервного копирования и восстановления:
 
 ```
-ssh-keyscan -H web >> ~/.ssh/known_hosts
+mkdir -p /bacula/backup /bacula/restore
+chown -R bacula:bacula /bacula
+chmod -R 700 /bacula
 ```
 
-Теперь, на другом хосте web, добавляем публичный ключ ssh, чтобы хост ansible мог корректно подключиться
+Переходим к конфигурации Bacula Director
+
+Открываем файл /etc/bacula/bacula-dir.conf
+
+и меняем интерфейс на котором сервер будет принимать клиентов
 
 ```
-echo "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDQulD+SK4ggadzuJZdksaB7VVAXzDbeYHkd41savMnzxLiVXW4SFUXlBx4c1B8J4thzlgH/dXiDKgyPsjPPiHJaao446jJrJxBT/VATUg+MEYY48qUifCg9cTffAis512MhyvCGInfU2B/FMCz8zF9P0sDp+NoHWOCamawJ+B2Sk3r9VgtS30l34WTDBINbcqtlEq1IKTWHHLuDw84bRLHBF4x8bn6REYjb+UF98zHlhV539iikHjZSqQa1KHnp+1Ew9IY1WoUDukjwuAa6YGkWjO1ughAlZ4xpzgp1coOp+C0tTTI4V45soO2V2fG1xXIBqGteYv/oBDDZfQ6kj3z" >> /home/vagrant/.ssh/authorized_keys
-echo "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDQulD+SK4ggadzuJZdksaB7VVAXzDbeYHkd41savMnzxLiVXW4SFUXlBx4c1B8J4thzlgH/dXiDKgyPsjPPiHJaao446jJrJxBT/VATUg+MEYY48qUifCg9cTffAis512MhyvCGInfU2B/FMCz8zF9P0sDp+NoHWOCamawJ+B2Sk3r9VgtS30l34WTDBINbcqtlEq1IKTWHHLuDw84bRLHBF4x8bn6REYjb+UF98zHlhV539iikHjZSqQa1KHnp+1Ew9IY1WoUDukjwuAa6YGkWjO1ughAlZ4xpzgp1coOp+C0tTTI4V45soO2V2fG1xXIBqGteYv/oBDDZfQ6kj3z" >> /root/.ssh/authorized_keys
-```
+DirAddress = 127.0.0.1
+``` 
 
-Также заранее отключим службу firewalld, чтобы была возможность открыть страницу с nginx
-
-```
-sudo systemctl stop firewalld
-```
-
-Теперь возвращаемся на машину с ansible и запускаем Playbook для установки nginx на хост web
+Секция будет следующего вида:
 
 ```
-ansible-playbook /home/vagrant/playbook.yml  -i /home/vagrant/.ansible/inventory.yml
+Director {# define myself
+  Name = bacula-dir
+  DIRport = 9101# where we listen for UA connections
+  QueryFile = "/etc/bacula/query.sql"
+  WorkingDirectory = "/var/spool/bacula"
+  PidDirectory = "/var/run"
+  Maximum Concurrent Jobs = 1
+  Password = "@@DIR_PASSWORD@@" # Console password
+  Messages = Daemon
+  DirAddress = 0.0.0.0
+}
 ```
 
-Вывод:
+Настроим резервное копирование локальной папки сервера /etc
+
+В этом же файле редактируем секцию job:
 
 ```
-[WARNING]: Found both group and host with same name: web
+Job {
+  Name = "BackupLocalFiles"
+  JobDefs = "DefaultJob"
+}
+```
+
+Добавим секцию задачи восстановления файлов
+
+```
+Job {
+  Name = "RestoreFiles"
+  Type = Restore
+  Client=bacula-fd 
+  FileSet="Full Set"  
+  Storage = File  
+  Pool = Default
+  Messages = Standard
+  Where = /bacula/restore
+}
+```
+
+Теперь сконфигурируем что нужно бэкапить в этой задачей, делается это через FileSet, добавляем секции в тот же файл :
+
+```
+FileSet {
+  Name = "Full Set"
+  Include {
+Options {
+  signature = MD5
+  compression = GZIP
+}
+
+File = /etc
+  }
+
+
+  Exclude {
+File = /var/spool/bacula
+File = /tmp
+File = /proc
+File = /tmp
+File = /.journal
+File = /.fsck
+File = /bacula
+  }
+}
+
+```
+
+Теперь перейдем к настройке Storage Daemon, он отвечает где хранить резервные копии, в этом же файле редактируем секцию:
+
+```
+Storage {
+  Name = File
+# Do not use "localhost" here
+  Address = 192.168.11.102# N.B. Use a fully qualified name here
+  SDPort = 9103
+  Password = "@@SD_PASSWORD@@"
+  Device = FileStorage
+  Media Type = File
+}
+```
+
+Далее настроим подключению к каталогу, где будет храниться информация о бэкапах, сохраненных файлах и тд.
+В этом же файле добавляем секцию:
+
+```
+Catalog {
+  Name = MyCatalog
+# Uncomment the following line if you want the dbi driver
+# dbdriver = "dbi:postgresql"; dbaddress = 127.0.0.1; dbport =  
+  dbname = "bacula"; dbuser = "bacula"; dbpassword = "bacula_db_password"
+}
+```
+
+Теперь хранение настроено в mysql базу
+
+Далее настроим пул хранения, он отвечает за retention, маркировку резервных копий.
+
+В этот же файл добавляем секцию:
+
+```
+Pool {
+  Name = File
+  Pool Type = Backup
+  Label Format = Local-
+  Recycle = yes   # Bacula can automatically recycle Volumes
+  AutoPrune = yes # Prune expired volumes
+  Volume Retention = 365 days # one year
+  Maximum Volume Bytes = 50G  # Limit Volume size to something reasonable
+  Maximum Volumes = 100   # Limit number of Volumes in Pool
+}
+```
+
+
+Проверяем конфиг 
+
+```
+bacula-dir -tc /etc/bacula/bacula-dir.conf
+```
+
+Теперь настроим Storage Daemon, к которому смогут подключаться клиенты для хранения резервных копий
+
+Открываем файл /etc/bacula/bacula-sd.conf и добавляем секцию
+
+```
+Storage { # definition of myself
+  Name = bacula-sd
+  SDPort = 9103  # Director's port  
+  WorkingDirectory = "/var/spool/bacula"
+  Pid Directory = "/var/run"
+  Maximum Concurrent Jobs = 20
+  SDAddress = 192.168.11.102
+}
+```
+
+В этом же файле добавляем секцию со Storage Device, в ней указано в какой каталог сохранять резервные копии:
+
+```
+Device {
+  Name = FileStorage
+  Media Type = File
+  Archive Device = /bacula/backup
+  LabelMedia = yes;   # lets Bacula label unlabeled media
+  Random Access = Yes;
+  AutomaticMount = yes;   # when device opened, read it
+  RemovableMedia = no;
+  AlwaysOpen = no;
+}
+```
+
+Проверяем конфиг:
+
+```
+bacula-sd -tc /etc/bacula/bacula-sd.conf
+```
+
+Далее меняем стандартные пароли в конфигах Bacula:
+
+
+```
+DIR_PASSWORD=`date +%s | sha256sum | base64 | head -c 33`
+sudo sed -i "s/@@DIR_PASSWORD@@/${DIR_PASSWORD}/" /etc/bacula/bacula-dir.conf
+sudo sed -i "s/@@DIR_PASSWORD@@/${DIR_PASSWORD}/" /etc/bacula/bconsole.conf
+
+SD_PASSWORD=`date +%s | sha256sum | base64 | head -c 33`
+sudo sed -i "s/@@SD_PASSWORD@@/${SD_PASSWORD}/" /etc/bacula/bacula-sd.conf
+sudo sed -i "s/@@SD_PASSWORD@@/${SD_PASSWORD}/" /etc/bacula/bacula-dir.conf
+	
+FD_PASSWORD=`date +%s | sha256sum | base64 | head -c 33`
+sudo sed -i "s/@@FD_PASSWORD@@/${FD_PASSWORD}/" /etc/bacula/bacula-dir.conf
+sudo sed -i "s/@@FD_PASSWORD@@/${FD_PASSWORD}/" /etc/bacula/bacula-fd.conf
+```
+
+Запускаем сервер Bacula
+
+```
+systemctl start bacula-dir
+systemctl start bacula-sd
+systemctl start bacula-fd
+```
+
+Для проверки локальной резервной копии /etc запускаем консоль Bacula
+
+```
+bconsole
+```
+
+Назначим label
+```
+label
+```
+
+Указываем тип 2
+
+Запускам задачу командой run
+
+Указываем job resource 1
+
+Просматриваем статус:
+
+```
+messages
+status director
+```
+
+Переходим к настройке второго сервера, клиента
+
+Устанавливаем необходимые программы на сервере клиенте
+
+```
+yum install bacula-client
+```
+
+Далее на сервере bacula редактируем bacula-dir.conf и добавляем строку 
+
+```
+@|"find /etc/bacula/conf.d -name '*.conf' -type f -exec echo @{} \;"
+```
+
+для возможности создания дополнительных конфигов
+
+Создаем папку /etc/bacula/conf.d
+
+```
+mkdir /etc/bacula/conf.d
+```
+
+Создаем RemoteFile Pool:
+
+```
+vi /etc/bacula/conf.d/pools.conf
+
+Pool {
+  Name = RemoteFile
+  Pool Type = Backup
+  Label Format = Remote-
+  Recycle = yes                       # Bacula can automatically recycle Volumes
+  AutoPrune = yes                     # Prune expired volumes
+  Volume Retention = 365 days         # one year
+    Maximum Volume Bytes = 50G          # Limit Volume size to something reasonable
+  Maximum Volumes = 100               # Limit number of Volumes in Pool
+}
+
+```
+
+Теперь переходим на сервер клиент и настраиваем File Daemon
+В нем указываем назначение сервера bacula
+
+```
+vi /etc/bacula/bacula-fd.conf
+
+Director {
+  Name = bacula
+  Password = "@@FD_PASSWORD@@"
+}
+```
+
+Далее в этом же конфиге указываем на каком ip будет работать File daemon:
+
+```
+FileDaemon {                          # this is me
+  Name = client
+  FDAddress = 192.168.11.101
+  FDport = 9102                  # where we listen for the director
+  WorkingDirectory = /var/spool/bacula
+  Pid Directory = /var/run
+  Maximum Concurrent Jobs = 20
+}
+```
+Добавим секцию по отправке сообщений на bacula сервер:
+
+```
+Messages {
+  Name = Standard
+  director = bacula = all, !skipped, !restored
+}
+```
+
+Проверяем конфиг клиента:
+
+```
+bacula-fd -tc /etc/bacula/bacula-fd.conf
+```
+
+Запускаем службу клиента:
+
+```
+systemctl start bacula-fd
+```
+
+Создаем директории для резервного копирования и восстановления:
+
+```
+mkdir -p /bacula/restore
+chown -R bacula:bacula /bacula
+chmod -R 700 /bacula
+
+```
+
+Теперь вернемся на сервер bacula и настроим что нужно копировать с клиента:
+
+```
+vi /etc/bacula/conf.d/filesets.conf
+
+FileSet {
+  Name = "Client Etc"
+  Include {
+    Options {
+      signature = MD5
+      compression = GZIP
+    }
     
-PLAY [web] *********************************************************************
+    File = /etc
+  }
+  Exclude {
     
-TASK [Gathering Facts] *********************************************************
-ok: [web]
-    
-TASK [include_role : my-nginx] *************************************************
-    
-TASK [my-nginx : Add Nginx Repository] *****************************************
-changed: [web]
-    
-TASK [my-nginx : Install Nginx] ************************************************
-changed: [web]
-    
-TASK [my-nginx : Enable Nginx Service] *****************************************
-changed: [web]
-    
-TASK [my-nginx : Add NGINX cofig] **********************************************
-changed: [web]
-    
-TASK [my-nginx : Copy custom page] *********************************************
-changed: [web]
-    
-RUNNING HANDLER [my-nginx : nginx start] ***************************************
-changed: [web]
-    
-PLAY RECAP *********************************************************************
-web    : ok=7    changed=6    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
-```
-
-Для проверки открываем в браузере страницу http://192.168.11.102:8080
-
-Данные шаги автоматизированы в vagrant
-
-Описание файлов и роли.
-
-Файлы запуска
-
-Запуск роли осуществляется файлом Playbook, в котором перечисленны:
-группа хостов
-устанавливаемая роль
-переменные
-
-playbook.yml:
-```
----
- - hosts: web
-   become: true
-   tasks:
-   - include_role:
-        name: my-nginx
-     vars:
-       port: 8080
-```
-
-В файл inventory, в котором перечисленны хосты и используемый ansible ssh пользователь
-
-inventory.yml:
-```
-[web]
-web ansible_user=vagrant
-```
-
-Каталог roles, в котором расположена роль ansible
-
-Структура каталогов и файлов роли:
-
-```
-[root@ansible roles]# tree
-.
-└── roles
-    └── my-nginx
-        ├── files
-        │   ├── index.html
-        │   └── nginx.repo
-        ├── handlers
-        │   └── main.yml
-        ├── meta
-        │   └── main.yml
-        ├── tasks
-        │   └── main.yml
-        ├── templates
-        │   ├── default.conf
-        │   └── nginx.conf
-        └── vars
-            └── main.yml
+  }
+}
 
 ```
 
-- В каталоге files, расположеный файлы, которые будут скопированы на целевой хост.
-- В каталоге handlers,файл main.yml расположены команды обработчики, которые вызываются при запуске задач в данной роли. (В этом примере запуск сервиса nginx)
-- В каталоге meta,файл main.yml расположено описание зависимостей данной роли.
-- В каталоге tasks,файл main.yml расположены задачи, которые выполнит ansible на целевом хосте. (В этом примере установка / запуск nginx, запуск сервиса nginx, копирование конфигов)
-- В каталоге templates,файлы default.conf, nginx.conf расположены файлы шаблоны, которые копируются на хост и используют внутри переменные ansible, в формате {{ variable_name }} , которые используются при конфигурировании
-- В каталоге vars,файл main.yml, расположено описание переменных и их значение по умолчанию. (в данном примере порт на котором слушает nginx)
+Создадим задачу резервного копирования:
 
+```
+vi /etc/bacula/conf.d/clients.conf
+
+Client {
+  Name = client
+  Address = client
+  FDPort = 9102 
+  Catalog = MyCatalog
+  Password = "@@FD_PASSWORD@@"          # password for Remote FileDaemon
+  File Retention = 30 days            # 30 days
+  Job Retention = 6 months            # six months
+  AutoPrune = yes                     # Prune expired Jobs/Files
+}
+
+
+Job {
+  Name = "BackupClientHost"
+  JobDefs = "DefaultJob"
+  Client = client
+  Pool = RemoteFile
+  FileSet="Client Etc"
+}
+```
+
+В ней мы указали наш сервер клиент и задачу резервного копирования
+
+
+Также в файле /etc/bacula/bacula-dir.conf настроим расписание резервного копирования:
+
+```
+Schedule {
+  Name = "client"
+  Run = Full daily  at 01:00
+  Run = Differential hourly at 0:30
+  Run = Differential hourly at 0:00
+  Run = Incremental hourly at 00:10
+  Run = Incremental hourly at 00:20
+  Run = Incremental hourly at 00:30
+  Run = Incremental hourly at 00:40
+  Run = Incremental hourly at 00:50
+  Run = Incremental hourly at 00:00
+}
+
+
+
+JobDefs {
+  Name = "DefaultJob"
+  Type = Backup
+  Level = Incremental
+  Client = bacula-fd 
+  FileSet = "Full Set"
+  Schedule = "client"
+  Storage = File
+  Messages = Standard
+  Pool = File
+  Priority = 10
+  Write Bootstrap = "/var/spool/bacula/%c.bsr"
+}
+```
+
+Перезапускаем bacula сервер:
+
+```
+systemctl restart bacula-dir
+```
