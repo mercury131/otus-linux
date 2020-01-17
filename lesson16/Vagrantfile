@@ -46,18 +46,30 @@ Vagrant.configure("2") do |config|
       case boxname.to_s
       when "client"
         box.vm.provision "shell", run: "always", inline: <<-SHELL
-          echo "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDQulD+SK4ggadzuJZdksaB7VVAXzDbeYHkd41savMnzxLiVXW4SFUXlBx4c1B8J4thzlgH/dXiDKgyPsjPPiHJaao446jJrJxBT/VATUg+MEYY48qUifCg9cTffAis512MhyvCGInfU2B/FMCz8zF9P0sDp+NoHWOCamawJ+B2Sk3r9VgtS30l34WTDBINbcqtlEq1IKTWHHLuDw84bRLHBF4x8bn6REYjb+UF98zHlhV539iikHjZSqQa1KHnp+1Ew9IY1WoUDukjwuAa6YGkWjO1ughAlZ4xpzgp1coOp+C0tTTI4V45soO2V2fG1xXIBqGteYv/oBDDZfQ6kj3z" >> /home/vagrant/.ssh/authorized_keys		
+          setenforce 0
+		  echo "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDQulD+SK4ggadzuJZdksaB7VVAXzDbeYHkd41savMnzxLiVXW4SFUXlBx4c1B8J4thzlgH/dXiDKgyPsjPPiHJaao446jJrJxBT/VATUg+MEYY48qUifCg9cTffAis512MhyvCGInfU2B/FMCz8zF9P0sDp+NoHWOCamawJ+B2Sk3r9VgtS30l34WTDBINbcqtlEq1IKTWHHLuDw84bRLHBF4x8bn6REYjb+UF98zHlhV539iikHjZSqQa1KHnp+1Ew9IY1WoUDukjwuAa6YGkWjO1ughAlZ4xpzgp1coOp+C0tTTI4V45soO2V2fG1xXIBqGteYv/oBDDZfQ6kj3z" >> /home/vagrant/.ssh/authorized_keys		
 		  mkdir /root/.ssh/
 		  echo "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDQulD+SK4ggadzuJZdksaB7VVAXzDbeYHkd41savMnzxLiVXW4SFUXlBx4c1B8J4thzlgH/dXiDKgyPsjPPiHJaao446jJrJxBT/VATUg+MEYY48qUifCg9cTffAis512MhyvCGInfU2B/FMCz8zF9P0sDp+NoHWOCamawJ+B2Sk3r9VgtS30l34WTDBINbcqtlEq1IKTWHHLuDw84bRLHBF4x8bn6REYjb+UF98zHlhV539iikHjZSqQa1KHnp+1Ew9IY1WoUDukjwuAa6YGkWjO1ughAlZ4xpzgp1coOp+C0tTTI4V45soO2V2fG1xXIBqGteYv/oBDDZfQ6kj3z" >> /root/.ssh/authorized_keys
 		  sudo systemctl stop firewalld
 		  echo "192.168.11.101  bacula" >> /etc/hosts
 		  yum install epel-release -y
 		  yum install -y bacula-client
+		  systemctl stop firewalld
+		  systemctl disable firewalld
+		  systemctl restart bacula-fd
+		  systemctl enable bacula-fd
+		  mkdir -p /bacula/restore
+		  chown -R bacula:bacula /bacula
+		  chmod -R 700 /bacula
+		  cp -f /vagrant/bacula-fd.conf /etc/bacula/bacula-fd.conf 
           SHELL
 		  
       when "bacula"
         box.vm.provision "shell", run: "always", inline: <<-SHELL
-          yum install epel-release -y
+          setenforce 0
+		  yum install epel-release -y
+		  systemctl stop firewalld
+		  systemctl disable firewalld
 		  yum install -y bacula-director bacula-storage bacula-console bacula-client mariadb-server
           cp /vagrant/id_rsa /home/vagrant/.ssh/
 		  cp /vagrant/id_rsa /root/.ssh/
@@ -78,8 +90,12 @@ Vagrant.configure("2") do |config|
 		  mkdir -p /bacula/backup /bacula/restore
 		  chown -R bacula:bacula /bacula
 		  chmod -R 700 /bacula
+		  mkdir /etc/bacula/conf.d/
 		  cp -f /vagrant/bacula-dir.conf /etc/bacula/bacula-dir.conf 
 		  cp -f /vagrant/bacula-sd.conf /etc/bacula/bacula-sd.conf 
+		  cp -f /vagrant/pools.conf /etc/bacula/conf.d/pools.conf 
+		  cp -f /vagrant/filesets.conf /etc/bacula/conf.d/filesets.conf 
+		  cp -f /vagrant/clients.conf /etc/bacula/conf.d/clients.conf 
 		  bacula-sd -tc /etc/bacula/bacula-dir.conf 
 		  bacula-sd -tc /etc/bacula/bacula-sd.conf
 		  systemctl start bacula-dir
@@ -89,6 +105,7 @@ Vagrant.configure("2") do |config|
 		  systemctl enable bacula-sd
 		  systemctl enable bacula-fd
 		  echo -e "label\nMyVolume\n2\nrun\n1\nyes\nmessages\nstatus director" | bconsole
+		  
 		  
 
 
