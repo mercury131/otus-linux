@@ -155,7 +155,7 @@ vagrant up
 
 В Vagrantfile реализована следующая сетевая схема:
 
-![network diagram](network.png)
+![network diagram](https://raw.githubusercontent.com/mercury131/otus-linux/master/lesson18/network.png)
 
 Для выполнения практической части использовались команды для построения статических маршрутов:
 
