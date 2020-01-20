@@ -1,0 +1,126 @@
+# -*- mode: ruby -*-
+# vim: set ft=ruby :
+home = ENV['HOME']
+
+MACHINES = {
+  :nginx => {
+        :box_name => "cdaf/CentOSLVM",
+        :ip_addr => '192.168.11.103',
+  },
+  :elksys => {
+        :box_name => "cdaf/CentOSLVM",
+        :ip_addr => '192.168.11.101',
+  },
+  :elknginx => {
+        :box_name => "cdaf/CentOSLVM",
+        :ip_addr => '192.168.11.102',
+  }
+}
+
+Vagrant.configure("2") do |config|
+
+  MACHINES.each do |boxname, boxconfig|
+
+      config.vm.define boxname do |box|
+
+          box.vm.box = boxconfig[:box_name]
+          box.vm.host_name = boxname.to_s
+
+          #box.vm.network "forwarded_port", guest: 3260, host: 3260+offset
+
+          box.vm.network "private_network", ip: boxconfig[:ip_addr]
+
+          box.vm.provider :virtualbox do |vb|
+          vb.customize ["modifyvm", :id, "--memory", "8192","--cpus", "8"]
+        #   vb.customize ["storagectl", :id, "--name", "SATA", "--add", "sata" ]
+          vb.name = boxname.to_s
+
+        #   boxconfig[:disks].each do |dname, dconf|
+        #       unless File.exist?(dconf[:dfile])
+        #         vb.customize ['createhd', '--filename', dconf[:dfile], '--variant', 'Fixed', '--size', dconf[:size]]
+        #       end
+        #       vb.customize ['storageattach', :id,  '--storagectl', 'SATA', '--port', dconf[:port], '--device', 0, '--type', 'hdd', '--medium', dconf[:dfile]]
+        # end
+          end
+      box.vm.provision "shell", inline: <<-SHELL
+          mkdir -p ~root/.ssh
+          cp ~vagrant/.ssh/auth* ~root/.ssh
+      SHELL
+
+      case boxname.to_s
+      when "nginx"
+        box.vm.provision "shell", run: "always", inline: <<-SHELL
+          sudo systemctl stop firewalld
+		  yum install epel-release -y
+		  yum install nginx -y
+		  auditctl -a exit,always -F path=/etc/nginx -F perm=wa
+		  cp /vagrant/elasticsearch.repo /etc/yum.repos.d/elasticsearch.repo
+		  yum install --enablerepo=elasticsearch filebeat -y
+		  cp -f /vagrant/filebeat.service /etc/systemd/system/filebeat.service
+		  cp -f /vagrant/filebeat-sys.service /etc/systemd/system/filebeat-sys.service
+		  cp -rf /vagrant/filebeat /etc/filebeat
+		  cp -rf /vagrant/filebeat2 /etc/filebeat2
+		  cp -r /var/lib/filebeat /var/lib/filebeat2
+		  mkdir /var/log/filebeat2
+		  systemctl start filebeat
+		  systemctl start filebeat-sys
+		  
+          SHELL
+		  
+      when "elknginx"
+        box.vm.provision "shell", run: "always", inline: <<-SHELL
+          yum install epel-release -y
+		  sudo systemctl stop firewalld
+		  rpm --import https://artifacts.elastic.co/GPG-KEY-elasticsearch
+		  cp /vagrant/elasticsearch.repo /etc/yum.repos.d/elasticsearch.repo
+		  yum install --enablerepo=elasticsearch elasticsearch -y
+		  cp -f /vagrant/elasticsearch-nginx.yml /etc/elasticsearch/elasticsearch.yml
+		  systemctl start elasticsearch
+		  systemctl enable elasticsearch
+		  yum install --enablerepo=elasticsearch kibana -y
+		  cp -f /vagrant/kibana-nginx.yml /etc/kibana/kibana.yml
+		  systemctl enable kibana
+		  systemctl start kibana
+		  yum install java-11-openjdk-devel -y
+		  yum install --enablerepo=elasticsearch logstash -y
+		  cp -f /vagrant/02-beats-input.conf /etc/logstash/conf.d/02-beats-input.conf
+		  cp -f /vagrant/10-syslog-filter.conf /etc/logstash/conf.d/10-syslog-filter.conf
+		  cp -f /vagrant/30-elasticsearch-output-nginx.conf /etc/logstash/conf.d/30-elasticsearch-output.conf
+		  systemctl start logstash
+		  systemctl enable logstash
+		  systemctl start elasticsearch
+		  sleep 60
+		  systemctl restart kibana
+		  SHELL
+		  
+      when "elksys"
+        box.vm.provision "shell", run: "always", inline: <<-SHELL
+          yum install epel-release -y
+		  sudo systemctl stop firewalld
+		  rpm --import https://artifacts.elastic.co/GPG-KEY-elasticsearch
+		  cp /vagrant/elasticsearch.repo /etc/yum.repos.d/elasticsearch.repo
+		  yum install --enablerepo=elasticsearch elasticsearch -y
+		  cp -f /vagrant/elasticsearch-sys.yml /etc/elasticsearch/elasticsearch.yml
+		  systemctl start elasticsearch
+		  systemctl enable elasticsearch
+		  yum install --enablerepo=elasticsearch kibana -y
+		  cp -f /vagrant/kibana-sys.yml /etc/kibana/kibana.yml
+		  systemctl enable kibana
+		  systemctl start kibana
+		  yum install java-11-openjdk-devel -y
+		  yum install --enablerepo=elasticsearch logstash -y
+		  cp -f /vagrant/02-beats-input.conf /etc/logstash/conf.d/02-beats-input.conf
+		  cp -f /vagrant/10-syslog-filter.conf /etc/logstash/conf.d/10-syslog-filter.conf
+		  cp -f /vagrant/30-elasticsearch-output-sys.conf /etc/logstash/conf.d/30-elasticsearch-output.conf
+		  systemctl start logstash
+		  systemctl enable logstash
+		  systemctl start elasticsearch
+		  sleep 60
+		  systemctl restart kibana
+        SHELL
+		
+      end
+
+      end
+   end
+end
