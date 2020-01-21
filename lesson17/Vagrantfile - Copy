@@ -60,10 +60,10 @@ Vagrant.configure("2") do |config|
 		  cp -f /vagrant/filebeat-sys.service /etc/systemd/system/filebeat-sys.service
 		  cp -rf /vagrant/filebeat /etc/filebeat
 		  systemctl start filebeat
-		  mkdir /var/log/filebeat2
 		  sleep 10
 		  cp -rf /vagrant/filebeat2 /etc/filebeat2
 		  cp -r /var/lib/filebeat /var/lib/filebeat2
+		  mkdir /var/log/filebeat2
 		  systemctl start filebeat-sys
 		  
           SHELL
@@ -79,7 +79,7 @@ Vagrant.configure("2") do |config|
 		  systemctl start elasticsearch
 		  systemctl enable elasticsearch
 		  yum install --enablerepo=elasticsearch kibana -y
-		  cp -f /vagrant/kibana.yml /etc/kibana/kibana.yml
+		  cp -f /vagrant/kibana-nginx.yml /etc/kibana/kibana.yml
 		  systemctl enable kibana
 		  systemctl start kibana
 		  yum install java-11-openjdk-devel -y
@@ -90,6 +90,15 @@ Vagrant.configure("2") do |config|
 		  systemctl start logstash
 		  systemctl enable logstash
 		  systemctl start elasticsearch
+		  sleep 60
+		  systemctl restart kibana
+		  yum install java-11-openjdk-devel -y
+		  yum install --enablerepo=elasticsearch logstash -y
+		  cp -f /vagrant/02-beats-input.conf /etc/logstash/conf.d/02-beats-input.conf
+		  cp -f /vagrant/10-syslog-filter.conf /etc/logstash/conf.d/10-syslog-filter.conf
+		  cp -f /vagrant/30-elasticsearch-output-sys.conf /etc/logstash/conf.d/30-elasticsearch-output.conf
+		  systemctl start logstash
+		  systemctl enable logstash
 		  SHELL
 		  
       when "elksys"
@@ -103,9 +112,19 @@ Vagrant.configure("2") do |config|
 		  systemctl start elasticsearch
 		  systemctl enable elasticsearch
 		  yum install --enablerepo=elasticsearch kibana -y
-		  cp -f /vagrant/kibana.yml /etc/kibana/kibana.yml
+		  cp -f /vagrant/kibana-sys.yml /etc/kibana/kibana.yml
 		  systemctl enable kibana
 		  systemctl start kibana
+		  yum install java-11-openjdk-devel -y
+		  yum install --enablerepo=elasticsearch logstash -y
+		  cp -f /vagrant/02-beats-input.conf /etc/logstash/conf.d/02-beats-input.conf
+		  cp -f /vagrant/10-syslog-filter.conf /etc/logstash/conf.d/10-syslog-filter.conf
+		  cp -f /vagrant/30-elasticsearch-output-sys.conf /etc/logstash/conf.d/30-elasticsearch-output.conf
+		  systemctl start logstash
+		  systemctl enable logstash
+		  systemctl start elasticsearch
+		  sleep 60
+		  systemctl restart kibana
 		  yum install java-11-openjdk-devel -y
 		  yum install --enablerepo=elasticsearch logstash -y
 		  cp -f /vagrant/02-beats-input.conf /etc/logstash/conf.d/02-beats-input.conf
