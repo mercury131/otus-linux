@@ -66,6 +66,7 @@ Vagrant.configure("2") do |config|
 		  cp -rf /vagrant/filebeat2 /etc/filebeat2
 		  cp -r /var/lib/filebeat /var/lib/filebeat2
 		  systemctl start filebeat-sys
+		  systemctl start nginx
 		  
           SHELL
 		  
