@@ -58,7 +58,7 @@ Vagrant.configure("2") do |config|
 		  yum install --enablerepo=elasticsearch filebeat -y
 		  cp -f /vagrant/filebeat.service /etc/systemd/system/filebeat.service
 		  cp -f /vagrant/filebeat-sys.service /etc/systemd/system/filebeat-sys.service
-		  cp -rf /vagrant/filebeat /etc/filebeat
+		  cp -rf /vagrant/filebeat/* /etc/filebeat/*
 		  cp -f /vagrant/filebeat/filebeat.yml /etc/filebeat/
 		  systemctl start filebeat
 		  mkdir /var/log/filebeat2
