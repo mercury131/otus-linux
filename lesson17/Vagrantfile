@@ -68,6 +68,7 @@ Vagrant.configure("2") do |config|
 		  cp -r /var/lib/filebeat /var/lib/filebeat2
 		  systemctl start filebeat-sys
 		  systemctl start nginx
+		  export no_proxy="127.0.0.1" && curl 127.0.0.1 && curl 127.0.0.1 && curl 127.0.0.1
 		  
           SHELL
 		  
