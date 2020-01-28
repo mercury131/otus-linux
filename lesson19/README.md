@@ -5,11 +5,12 @@
 - **Vagrant** - ПО для конфигурирования/шаблонизирования виртуальных машин
 - **Git** - система контроля версий
 - **Ansible** - система управления конфигурациями
+- **FreeIPA** - централизованная система по управлению идентификацией пользователей
 
 
 Используемые репозитории:
 - **https://github.com/mercury131/otus-linux** - репозиторий для выполнения домашних заданий OTUS
-- **https://github.com/mercury131/otus-linux/tree/master/lesson10** - ссылка на данное домашнее задание
+- **https://github.com/mercury131/otus-linux/tree/master/lesson19** - ссылка на данное домашнее задание
 
 
  
@@ -17,20 +18,19 @@
 
 В рамках данного домашнего задания выполнено:
 
-Подготовить стенд на Vagrant как минимум с одним сервером. На этом сервере используя Ansible необходимо развернуть nginx со следующими условиями:
-- необходимо использовать модуль yum/apt
-- конфигурационные файлы должны быть взяты из шаблона jinja2 с перемененными
-- после установки nginx должен быть в режиме enabled в systemd
-- должен быть использован notify для старта nginx после установки
-- сайт должен слушать на нестандартном порту - 8080, для этого использовать переменные в Ansible
-* Сделать все это с использованием Ansible роли
+1. Установить FreeIPA;
+2. Написать Ansible playbook для конфигурации клиента;
+3*. Настроить аутентификацию по SSH-ключам;
+4**. Firewall должен быть включен на сервере и на клиенте.
+
+В git - результирующий playbook. 
 
 
 
 
 Используемые файлы и директории:
-- В директории lesson10 расположен Vagrantfile с образом Centos 7 и автоматическими шагами развертывания
-- В директории lesson10/ansible , расположены playbook, inventory файл и роль по установке nginx, в каталоге lesson10/ansible/my-nginx
+- В директории lesson19 расположен Vagrantfile с образом Centos 7 и автоматическими шагами развертывания
+- В директории lesson19/ansible , расположены playbook, inventory файл и роль по вводу в домен freeipa
 
 # Как проверить домашнее задание?
 
@@ -49,25 +49,46 @@ vagrant plugin install vagrant-reload
 Для запуска Vagrantfile автоматизированными шагами выполните:
 
 ```
-cd otus-linux/lesson10
+cd otus-linux/lesson19
 vagrant up 
-vagrant ssh
+vagrant ssh ipa
 ```
 
-Откройте следующие страницы в браузере для проверки:
+Авторизуйтесь под root и запустите playbook:
 
 ```
-http://192.168.11.102:8080
+sudo -i 
+ansible-playbook /home/vagrant/install-client.yml  -i /home/vagrant/.ansible/hosts
 ```
+
+После выполнения playbook, можно авторизоваться по ssh, на клиенте, с помощью доменной учетной записи testuser
+При первом логине потребутся изменить пароль пользователя
+
+```
+[root@domain ~]# ssh testuser@client
+Password:
+Password expired. Change your password now.
+Current Password:
+New password:
+Retype new password:
+Creating home directory for testuser.
+[testuser@client ~]$ pwd
+/home/testuser
+[testuser@client ~]$
+```
+
+
 
 # Описание выполнения данного задания.
 
 Устанавливаем необходимые пакеты:
 
 ```
-yum install epel-release -y
 yum install ansible vim -y
+yum update nss -y
+yum install ipa-server ipa-server-dns -y
 ```
+Если не обновить пакет nss, freeipa не установится корректно
 
 Копируем SSH ключи на машину с Ansible:
 
@@ -84,29 +105,42 @@ chown vagrant:vagrant /home/vagrant/.ssh/id_rsa
 chmod 0600 /home/vagrant/.ssh/id_rsa
 ```
 
-Прописываем второй хост, куда будем ставить nginx в hosts, чтобы обеспечить связанность по dns имени:
+Прописываем корректные адреса в hosts
 
 ```
-echo "192.168.11.102  web" >> /etc/hosts
+echo " 127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4 " > /etc/hosts
+echo " ::1         localhost localhost.localdomain localhost6 localhost6.localdomain6" >> /etc/hosts
+echo "192.168.11.102  client.domain.local client" >> /etc/hosts
+echo "192.168.11.101  ipa.domain.local ipa domain.local" >> /etc/hosts
+```
+
+Включаем правила Firewall для freeIPA
+
+```
+firewall-cmd --permanent --add-service=ntp
+firewall-cmd --permanent --add-service=http
+firewall-cmd --permanent --add-service=https
+firewall-cmd --permanent --add-service=ldap
+firewall-cmd --permanent --add-service=ldaps
+firewall-cmd --permanent --add-service=kerberos
+firewall-cmd --permanent --add-service=kpasswd
+firewall-cmd --permanent --add-service=dns
+firewall-cmd --reload
 ```
 
 Создаем структуру каталогов для Ansible и копируем роль для установки nginx в необходимые директории:
 Роль копируем в домашние каталоги, для удобства при дебаге.
 ```
 mkdir ~/ansible
-mkdir -p /etc/ansible/roles/
-mkdir -p /home/vagrant/.ansible/roles/
-mkdir -p /root/.ansible/roles/
-cp -r /vagrant/ansible/roles/ /etc/ansible/roles/
-cp -r /vagrant/ansible/roles /home/vagrant/.ansible/
-cp -r /vagrant/ansible/roles /root/.ansible/
+mkdir -p /etc/ansible/roles/ && mkdir -p /home/vagrant/.ansible/roles/ && mkdir -p /root/.ansible/roles/
+cp -r /vagrant/roles/* /etc/ansible/roles/ && cp -r /vagrant/roles /home/vagrant/.ansible/ && cp -r /vagrant/roles /root/.ansible/roles/
 ```
 
 Копируем Playbook и inventory файлы, для запуска роли, передачи переменной с портом nginx и указанием хостов из inventory
 
 ```
-cp /vagrant/ansible/playbook.yml /home/vagrant/playbook.yml
-cp /vagrant/ansible/inventory.yml /home/vagrant/.ansible/inventory.yml
+cp /vagrant/install-client.yml /home/vagrant/install-client.yml
+cp /vagrant/hosts /home/vagrant/.ansible/hosts
 ```
 
 В рамках сессии отключаем у ansible проверку на наличие ключей в known_hosts и добавляем отпечаток хоста web в known_hosts
@@ -115,122 +149,216 @@ cp /vagrant/ansible/inventory.yml /home/vagrant/.ansible/inventory.yml
 ssh-keyscan -H web >> ~/.ssh/known_hosts
 ```
 
-Теперь, на другом хосте web, добавляем публичный ключ ssh, чтобы хост ansible мог корректно подключиться
+Теперь, на другом хосте, добавляем публичный ключ ssh, чтобы хост ansible мог корректно подключиться
 
 ```
 echo "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDQulD+SK4ggadzuJZdksaB7VVAXzDbeYHkd41savMnzxLiVXW4SFUXlBx4c1B8J4thzlgH/dXiDKgyPsjPPiHJaao446jJrJxBT/VATUg+MEYY48qUifCg9cTffAis512MhyvCGInfU2B/FMCz8zF9P0sDp+NoHWOCamawJ+B2Sk3r9VgtS30l34WTDBINbcqtlEq1IKTWHHLuDw84bRLHBF4x8bn6REYjb+UF98zHlhV539iikHjZSqQa1KHnp+1Ew9IY1WoUDukjwuAa6YGkWjO1ughAlZ4xpzgp1coOp+C0tTTI4V45soO2V2fG1xXIBqGteYv/oBDDZfQ6kj3z" >> /home/vagrant/.ssh/authorized_keys
 echo "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDQulD+SK4ggadzuJZdksaB7VVAXzDbeYHkd41savMnzxLiVXW4SFUXlBx4c1B8J4thzlgH/dXiDKgyPsjPPiHJaao446jJrJxBT/VATUg+MEYY48qUifCg9cTffAis512MhyvCGInfU2B/FMCz8zF9P0sDp+NoHWOCamawJ+B2Sk3r9VgtS30l34WTDBINbcqtlEq1IKTWHHLuDw84bRLHBF4x8bn6REYjb+UF98zHlhV539iikHjZSqQa1KHnp+1Ew9IY1WoUDukjwuAa6YGkWjO1ughAlZ4xpzgp1coOp+C0tTTI4V45soO2V2fG1xXIBqGteYv/oBDDZfQ6kj3z" >> /root/.ssh/authorized_keys
 ```
 
-Также заранее отключим службу firewalld, чтобы была возможность открыть страницу с nginx
+Также настроим службу firewalld
 
 ```
-sudo systemctl stop firewalld
+firewall-cmd --permanent --add-service=dns
+firewall-cmd --permanent --add-service=ssh
+firewall-cmd --reload
 ```
 
-Теперь возвращаемся на машину с ansible и запускаем Playbook для установки nginx на хост web
+Теперь сконфигурируем домен на машине ipa
 
 ```
-ansible-playbook /home/vagrant/playbook.yml  -i /home/vagrant/.ansible/inventory.yml
+ipa-server-install
 ```
 
-Вывод:
+Используемые входные аргументы параметры:
 
 ```
-[WARNING]: Found both group and host with same name: web
-    
-PLAY [web] *********************************************************************
-    
-TASK [Gathering Facts] *********************************************************
-ok: [web]
-    
-TASK [include_role : my-nginx] *************************************************
-    
-TASK [my-nginx : Add Nginx Repository] *****************************************
-changed: [web]
-    
-TASK [my-nginx : Install Nginx] ************************************************
-changed: [web]
-    
-TASK [my-nginx : Enable Nginx Service] *****************************************
-changed: [web]
-    
-TASK [my-nginx : Add NGINX cofig] **********************************************
-changed: [web]
-    
-TASK [my-nginx : Copy custom page] *********************************************
-changed: [web]
-    
-RUNNING HANDLER [my-nginx : nginx start] ***************************************
-changed: [web]
-    
-PLAY RECAP *********************************************************************
-web    : ok=7    changed=6    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
-```
-
-Для проверки открываем в браузере страницу http://192.168.11.102:8080
-
-Данные шаги автоматизированы в vagrant
-
-Описание файлов и роли.
-
-Файлы запуска
-
-Запуск роли осуществляется файлом Playbook, в котором перечисленны:
-группа хостов
-устанавливаемая роль
-переменные
-
-playbook.yml:
-```
----
- - hosts: web
-   become: true
-   tasks:
-   - include_role:
-        name: my-nginx
-     vars:
-       port: 8080
-```
-
-В файл inventory, в котором перечисленны хосты и используемый ansible ssh пользователь
-
-inventory.yml:
-```
-[web]
-web ansible_user=vagrant
-```
-
-Каталог roles, в котором расположена роль ansible
-
-Структура каталогов и файлов роли:
-
-```
-[root@ansible roles]# tree
-.
-└── roles
-    └── my-nginx
-        ├── files
-        │   ├── index.html
-        │   └── nginx.repo
-        ├── handlers
-        │   └── main.yml
-        ├── meta
-        │   └── main.yml
-        ├── tasks
-        │   └── main.yml
-        ├── templates
-        │   ├── default.conf
-        │   └── nginx.conf
-        └── vars
-            └── main.yml
+yes
+ipa.domain.local
+domain.local
+DOMAIN.LOCAL
+superadmin123
+superadmin123
+superadmin123
+superadmin123
+yes
+yes
+no
+yes
 
 ```
 
-- В каталоге files, расположеный файлы, которые будут скопированы на целевой хост.
-- В каталоге handlers,файл main.yml расположены команды обработчики, которые вызываются при запуске задач в данной роли. (В этом примере запуск сервиса nginx)
-- В каталоге meta,файл main.yml расположено описание зависимостей данной роли.
-- В каталоге tasks,файл main.yml расположены задачи, которые выполнит ansible на целевом хосте. (В этом примере установка / запуск nginx, запуск сервиса nginx, копирование конфигов)
-- В каталоге templates,файлы default.conf, nginx.conf расположены файлы шаблоны, которые копируются на хост и используют внутри переменные ansible, в формате {{ variable_name }} , которые используются при конфигурировании
-- В каталоге vars,файл main.yml, расположено описание переменных и их значение по умолчанию. (в данном примере порт на котором слушает nginx)
+После установки получаем Kerberos тикет
 
+```
+echo -e "superadmin123" | kinit admin
+```
+
+Создаем тестовую учетную запись:
+
+```
+echo -e " testuser123" | ipa user-add testuser  --first=Test --last=User --email=test@domain.local  --shell=/bin/bash --password
+```
+
+Создаем DNS A запись клиента 
+
+```
+ipa dnsrecord-add domain.local client --a-rec 192.168.11.102
+```
+
+
+Теперь переходим на клиента, и запускаем установку клиента freeIPA:
+
+```
+yum update -y
+yum -y install freeipa-client ipa-admintools
+```
+
+Возвращаемся на FreeIPA сервер - ipa и запускаем под root, ansible playbook:
+
+```
+sudo -i
+ansible-playbook /home/vagrant/install-client.yml  -i /home/vagrant/.ansible/hosts
+```
+
+В результате машина client будет введена в домен domain.local , развернутый в freeIPA
+
+```
+[vagrant@domain ~]$ sudo -i
+[root@domain ~]# ansible-playbook /home/vagrant/install-client.yml  -i /home/vagrant/.ansible/hosts
+
+PLAY [Playbook to configure IPA clients with username/password] ***************************************************************************************************************************************************************************************************************
+
+TASK [Gathering Facts] ********************************************************************************************************************************************************************************************************************************************************
+The authenticity of host 'client.domain.local (<no hostip for proxy command>)' can't be established.
+ECDSA key fingerprint is SHA256:Hp1hLVWEE6vqDrQeIXbXORGAyjB22R4UJ0OUnXFCo/E.
+ECDSA key fingerprint is MD5:7b:d2:d1:b3:4a:1f:49:34:a9:5f:92:2a:90:58:fe:23.
+Are you sure you want to continue connecting (yes/no)? yes
+ok: [client.domain.local]
+
+TASK [ipaclient : Import variables specific to distribution] ******************************************************************************************************************************************************************************************************************
+ok: [client.domain.local] => (item=/etc/ansible/roles/ipaclient/vars/CentOS-7.yml)
+
+TASK [ipaclient : Install IPA client] *****************************************************************************************************************************************************************************************************************************************
+included: /etc/ansible/roles/ipaclient/tasks/install.yml for client.domain.local
+
+TASK [ipaclient : Install - Ensure that IPA client packages are installed] ****************************************************************************************************************************************************************************************************
+ok: [client.domain.local]
+
+TASK [ipaclient : Install - Set ipaclient_servers] ****************************************************************************************************************************************************************************************************************************
+ok: [client.domain.local]
+
+TASK [ipaclient : Install - Set ipaclient_servers from cluster inventory] *****************************************************************************************************************************************************************************************************
+skipping: [client.domain.local]
+
+TASK [ipaclient : Install - Check that either principal or keytab is set] *****************************************************************************************************************************************************************************************************
+skipping: [client.domain.local]
+
+TASK [ipaclient : Install - Set default principal if no keytab is given] ******************************************************************************************************************************************************************************************************
+skipping: [client.domain.local]
+
+TASK [ipaclient : Install - IPA client test] **********************************************************************************************************************************************************************************************************************************
+ok: [client.domain.local]
+
+TASK [ipaclient : Install - Cleanup leftover ccache] **************************************************************************************************************************************************************************************************************************
+ok: [client.domain.local]
+
+TASK [ipaclient : Install - Configure NTP] ************************************************************************************************************************************************************************************************************************************
+ [WARNING]: Unable to sync time with NTP server, assuming the time is in sync. Please check that 123 UDP port is opened.
+
+ok: [client.domain.local]
+
+TASK [ipaclient : Install - Make sure One-Time Password is enabled if it's already defined] ***********************************************************************************************************************************************************************************
+skipping: [client.domain.local]
+
+TASK [ipaclient : Install - Disable One-Time Password for on_master] **********************************************************************************************************************************************************************************************************
+skipping: [client.domain.local]
+
+TASK [ipaclient : Install - Test if IPA client has working krb5.keytab] *******************************************************************************************************************************************************************************************************
+ok: [client.domain.local]
+
+TASK [ipaclient : Install - Disable One-Time Password for client with working krb5.keytab] ************************************************************************************************************************************************************************************
+skipping: [client.domain.local]
+
+TASK [ipaclient : Install - Keytab or password is required for getting otp] ***************************************************************************************************************************************************************************************************
+skipping: [client.domain.local]
+
+TASK [ipaclient : Install - Get One-Time Password for client enrollment] ******************************************************************************************************************************************************************************************************
+skipping: [client.domain.local]
+
+TASK [ipaclient : Install - Report error for OTP generation] ******************************************************************************************************************************************************************************************************************
+skipping: [client.domain.local]
+
+TASK [ipaclient : Install - Store the previously obtained OTP] ****************************************************************************************************************************************************************************************************************
+skipping: [client.domain.local]
+
+TASK [ipaclient : Store predefined OTP in admin_password] *********************************************************************************************************************************************************************************************************************
+skipping: [client.domain.local]
+
+TASK [ipaclient : Install - Check if principal and keytab are set] ************************************************************************************************************************************************************************************************************
+skipping: [client.domain.local]
+
+TASK [ipaclient : Install - Check if one of password or keytabs are set] ******************************************************************************************************************************************************************************************************
+skipping: [client.domain.local]
+
+TASK [ipaclient : Install - Purge DOMAIN.LOCAL from host keytab] **************************************************************************************************************************************************************************************************************
+changed: [client.domain.local]
+
+TASK [ipaclient : Install - Backup and set hostname] **************************************************************************************************************************************************************************************************************************
+changed: [client.domain.local]
+
+TASK [ipaclient : Install - Join IPA] *****************************************************************************************************************************************************************************************************************************************
+changed: [client.domain.local]
+
+TASK [ipaclient : fail] *******************************************************************************************************************************************************************************************************************************************************
+skipping: [client.domain.local]
+
+TASK [ipaclient : fail] *******************************************************************************************************************************************************************************************************************************************************
+skipping: [client.domain.local]
+
+TASK [ipaclient : fail] *******************************************************************************************************************************************************************************************************************************************************
+skipping: [client.domain.local]
+
+TASK [ipaclient : Install - Configure IPA default.conf] ***********************************************************************************************************************************************************************************************************************
+changed: [client.domain.local]
+
+TASK [ipaclient : Install - Configure SSSD] ***********************************************************************************************************************************************************************************************************************************
+changed: [client.domain.local]
+
+TASK [ipaclient : Install - Configure krb5 for IPA realm] *********************************************************************************************************************************************************************************************************************
+changed: [client.domain.local]
+
+TASK [ipaclient : Install - IPA API calls for remaining enrollment parts] *****************************************************************************************************************************************************************************************************
+changed: [client.domain.local]
+
+TASK [ipaclient : Install - Fix IPA ca] ***************************************************************************************************************************************************************************************************************************************
+skipping: [client.domain.local]
+
+TASK [ipaclient : Install - Create IPA NSS database] **************************************************************************************************************************************************************************************************************************
+changed: [client.domain.local]
+
+TASK [ipaclient : Install - Configure SSH and SSHD] ***************************************************************************************************************************************************************************************************************************
+changed: [client.domain.local]
+
+TASK [ipaclient : Install - Configure automount] ******************************************************************************************************************************************************************************************************************************
+changed: [client.domain.local]
+
+TASK [ipaclient : Install - Configure firefox] ********************************************************************************************************************************************************************************************************************************
+skipping: [client.domain.local]
+
+TASK [ipaclient : Install - Configure NIS] ************************************************************************************************************************************************************************************************************************************
+changed: [client.domain.local]
+
+TASK [ipaclient : Install - Restore original admin password if overwritten by OTP] ********************************************************************************************************************************************************************************************
+skipping: [client.domain.local]
+
+TASK [ipaclient : Cleanup leftover ccache] ************************************************************************************************************************************************************************************************************************************
+ok: [client.domain.local]
+
+TASK [ipaclient : Uninstall IPA client] ***************************************************************************************************************************************************************************************************************************************
+skipping: [client.domain.local]
+
+PLAY RECAP ********************************************************************************************************************************************************************************************************************************************************************
+client.domain.local        : ok=21   changed=11   unreachable=0    failed=0
+
+```
