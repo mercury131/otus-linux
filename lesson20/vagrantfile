@@ -1,0 +1,197 @@
+# -*- mode: ruby -*-
+# vim: set ft=ruby :
+# -*- mode: ruby -*-
+# vim: set ft=ruby :
+
+MACHINES = {
+:inetRouter => {
+        :box_name => "centos/6",
+        #:public => {:ip => '10.10.10.1', :adapter => 1},
+        :net => [
+                   {ip: '192.168.255.1', adapter: 2, netmask: "255.255.255.252", virtualbox__intnet: "router-net"},
+				   {adapter: 3, auto_config: false, virtualbox__intnet: "bond-net"},
+				   {adapter: 4, auto_config: false, virtualbox__intnet: "bond-net"},
+                ]
+  },
+  :centralRouter => {
+        :box_name => "centos/7",
+        :net => [
+                   {ip: '192.168.255.2', adapter: 2, netmask: "255.255.255.252", virtualbox__intnet: "router-net"},
+                   {ip: '192.168.0.1', adapter: 3, netmask: "255.255.255.240", virtualbox__intnet: "dir-net"},
+				   {adapter: 4, auto_config: false, virtualbox__intnet: "bond-net"},
+				   {adapter: 5, auto_config: false, virtualbox__intnet: "bond-net"},
+				   {ip: '192.168.5.1', adapter: 6, netmask: "255.255.255.0", virtualbox__intnet: "office1-to-central"},
+				   {ip: '192.168.6.1', adapter: 7, netmask: "255.255.255.0", virtualbox__intnet: "office2-to-central"},
+
+                ]
+  },
+  
+  :centralServer => {
+        :box_name => "centos/7",
+        :net => [
+                   {ip: '192.168.0.2', adapter: 2, netmask: "255.255.255.240", virtualbox__intnet: "dir-net"},
+                   {adapter: 3, auto_config: false, virtualbox__intnet: true},
+                   {adapter: 4, auto_config: false, virtualbox__intnet: true},
+                ]
+  },
+  :office1Router => {
+        :box_name => "centos/7",
+        :net => [
+                   {ip: '192.168.5.2', adapter: 2, netmask: "255.255.255.0", virtualbox__intnet: "office1-to-central"},
+                   {ip: '192.168.2.1', adapter: 3, netmask: "255.255.255.192", virtualbox__intnet: "dev-net1"},
+                   {ip: '192.168.2.129', adapter: 4, netmask: "255.255.255.192", virtualbox__intnet: "managers1"},
+                   {ip: '192.168.2.193', adapter: 5, netmask: "255.255.255.192", virtualbox__intnet: "office1-hw"},
+				   {ip: '192.168.2.65', adapter: 6, netmask: "255.255.255.192", virtualbox__intnet: "test-servers1"},
+                ]
+  },
+    :office1Server => {
+        :box_name => "centos/7",
+        :net => [
+                   {ip: '192.168.2.66', adapter: 2, netmask: "255.255.255.192", virtualbox__intnet: "test-servers1"},
+                   {adapter: 3, auto_config: false, virtualbox__intnet: true},
+                   {adapter: 4, auto_config: false, virtualbox__intnet: true},
+                ]
+  },
+  :office2Router => {
+        :box_name => "centos/7",
+        :net => [
+                   {ip: '192.168.6.2', adapter: 2, netmask: "255.255.255.0", virtualbox__intnet: "office2-to-central"},
+                   {ip: '192.168.1.1', adapter: 3, netmask: "255.255.255.128", virtualbox__intnet: "dev-net2"},
+                   {ip: '192.168.1.193', adapter: 4, netmask: "255.255.255.192", virtualbox__intnet: "office2-hw"},
+				   {ip: '192.168.1.129', adapter: 5, netmask: "255.255.255.192", virtualbox__intnet: "test-servers2"},
+                ]
+  },
+    :office2Server => {
+        :box_name => "centos/7",
+        :net => [
+                   {ip: '192.168.1.130', adapter: 2, netmask: "255.255.255.192", virtualbox__intnet: "test-servers2"},
+                   {adapter: 3, auto_config: false, virtualbox__intnet: true},
+                   {adapter: 4, auto_config: false, virtualbox__intnet: true},
+                ]
+  },
+  
+}
+
+Vagrant.configure("2") do |config|
+
+  MACHINES.each do |boxname, boxconfig|
+
+    config.vm.define boxname do |box|
+
+        box.vm.box = boxconfig[:box_name]
+        box.vm.host_name = boxname.to_s
+
+        boxconfig[:net].each do |ipconf|
+          box.vm.network "private_network", ipconf
+        end
+        
+        if boxconfig.key?(:public)
+          box.vm.network "public_network", boxconfig[:public]
+        end
+
+        box.vm.provision "shell", inline: <<-SHELL
+          mkdir -p ~root/.ssh
+                cp ~vagrant/.ssh/auth* ~root/.ssh
+        SHELL
+        
+        case boxname.to_s
+        when "inetRouter"
+          box.vm.provision "shell", run: "always", inline: <<-SHELL
+            #yum install epel-release -y
+			#yum install NetworkManager -y
+			sysctl net.ipv4.conf.all.forwarding=1
+            iptables -t nat -A POSTROUTING ! -d 192.168.0.0/16 -o eth0 -j MASQUERADE
+			ip route add 192.168.0.0/20 via 192.168.255.2 dev eth1
+			cp /vagrant/ifcfg-bond0 /etc/sysconfig/network-scripts/ifcfg-bond0
+			cp /vagrant/ifcfg-eth2 /etc/sysconfig/network-scripts/ifcfg-eth2
+			cp /vagrant/ifcfg-eth3 /etc/sysconfig/network-scripts/ifcfg-eth3
+			service network restart
+			#https://www.serverlab.ca/tutorials/linux/administration-linux/bonding-network-interfaces-in-centos-6/
+			#ip route add 192.168.2.64/26 via 192.168.255.3 dev eth1
+			#iptables -t nat -A POSTROUTING ! -d 192.168.0.0/16 -o eth0 -j MASQUERADE
+			#iptables -A INPUT -p icmp --icmp-type 8 -s 0/0 -d 192.168.0.0/16 -m state --state NEW,ESTABLISHED,RELATED -j ACCEPT
+			#iptables -A OUTPUT -p icmp --icmp-type 0 -s 192.168.255.1 -d 0/0 -m state --state ESTABLISHED,RELATED -j ACCEPT
+			#iptables -A OUTPUT -p icmp --icmp-type 8 -s 192.168.255.1 -d 0/0 -m state --state NEW,ESTABLISHED,RELATED -j ACCEPT
+			#iptables -A INPUT -p icmp --icmp-type 0 -s 0/0 -d 192.168.255.1 -m state --state ESTABLISHED,RELATED -j ACCEPT
+            SHELL
+        when "centralRouter"
+          box.vm.provision "shell", run: "always", inline: <<-SHELL
+            sysctl net.ipv4.conf.all.forwarding=1
+            echo "DEFROUTE=no" >> /etc/sysconfig/network-scripts/ifcfg-eth0 
+            echo "GATEWAY=192.168.255.1" >> /etc/sysconfig/network-scripts/ifcfg-eth1
+            systemctl restart network
+			yum install traceroute-2.0.22-2.el7.x86_64 -y
+			ip route add 0.0.0.0/0 via 192.168.255.1 dev eth1
+			ip route add 192.168.2.64/26 via 192.168.5.2 dev eth5
+			ip route add 192.168.1.128/26 via 192.168.6.2 dev eth6
+			echo 1 > /proc/sys/net/ipv4/ip_forward
+			nmcli con add type bond ifname bond0 bond.options "mode=balance-rr,miimon=100" ip4 192.168.7.2/24
+			ip a
+			nmcli con add type ethernet ifname eth3 master bond0
+			nmcli con add type ethernet ifname eth4 master bond0
+			nmcli con up bond-slave-eth3
+			nmcli con up bond-slave-eth4
+			#https://docs.ansible.com/ansible/2.4/net_linkagg_module.html#examples
+			#https://docs.ansible.com/ansible/latest/modules/nmcli_module.html#examples
+			#https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/networking_guide/sec-configure_802_1q_vlan_tagging_using_the_command_line_tool_nmcli
+			#https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/networking_guide/sec-network_bonding_using_the_networkmanager_command_line_tool_nmcli
+			#nmcli con del static-bond
+			#nmcli con show
+			#ip route add 192.168.2.0/26 via 192.168.255.3 dev eth1
+			#ip route del 0.0.0.0/0
+            SHELL
+        when "centralServer"
+          box.vm.provision "shell", run: "always", inline: <<-SHELL
+            echo "DEFROUTE=no" >> /etc/sysconfig/network-scripts/ifcfg-eth0 
+            echo "GATEWAY=192.168.0.1" >> /etc/sysconfig/network-scripts/ifcfg-eth1
+            systemctl restart network
+			yum install traceroute-2.0.22-2.el7.x86_64 -y
+			ip route add 0.0.0.0/0 via 192.168.0.1 dev eth1
+            SHELL
+        when "office1Router"
+          box.vm.provision "shell", run: "always", inline: <<-SHELL
+            sysctl net.ipv4.conf.all.forwarding=1
+            echo "DEFROUTE=no" >> /etc/sysconfig/network-scripts/ifcfg-eth0 
+            echo "GATEWAY=192.168.255.2" >> /etc/sysconfig/network-scripts/ifcfg-eth1
+            systemctl restart network
+			yum install traceroute-2.0.22-2.el7.x86_64 -y
+			ip route add 0.0.0.0/0 via 192.168.5.1 dev eth1
+			echo 1 > /proc/sys/net/ipv4/ip_forward
+			#ip route del 0.0.0.0/0
+            SHELL
+        when "office1Server"
+          box.vm.provision "shell", run: "always", inline: <<-SHELL
+            echo "DEFROUTE=no" >> /etc/sysconfig/network-scripts/ifcfg-eth0 
+            echo "GATEWAY=192.168.2.65" >> /etc/sysconfig/network-scripts/ifcfg-eth1
+            systemctl restart network
+			yum install traceroute-2.0.22-2.el7.x86_64 -y
+			ip route add 0.0.0.0/0 via 192.168.2.65 dev eth1
+            SHELL
+        when "office2Router"
+          box.vm.provision "shell", run: "always", inline: <<-SHELL
+            sysctl net.ipv4.conf.all.forwarding=1
+            echo "DEFROUTE=no" >> /etc/sysconfig/network-scripts/ifcfg-eth0 
+            echo "GATEWAY=192.168.255.2" >> /etc/sysconfig/network-scripts/ifcfg-eth1
+            systemctl restart network
+			yum install traceroute-2.0.22-2.el7.x86_64 -y
+			ip route add 0.0.0.0/0 via 192.168.6.1 dev eth1
+			echo 1 > /proc/sys/net/ipv4/ip_forward
+			#ip route del 0.0.0.0/0
+            SHELL
+        when "office2Server"
+          box.vm.provision "shell", run: "always", inline: <<-SHELL
+            echo "DEFROUTE=no" >> /etc/sysconfig/network-scripts/ifcfg-eth0 
+            echo "GATEWAY=192.168.1.129" >> /etc/sysconfig/network-scripts/ifcfg-eth1
+            systemctl restart network
+			yum install traceroute-2.0.22-2.el7.x86_64 -y
+			ip route add 0.0.0.0/0 via 192.168.1.129 dev eth1
+            SHELL
+        end
+
+      end
+
+  end
+  
+  
+end
+
