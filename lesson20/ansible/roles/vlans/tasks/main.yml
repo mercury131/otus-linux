@@ -1,0 +1,12 @@
+---
+     
+
+    - name: Copy interface config
+      template: src=ifcfg-eth dest=/etc/sysconfig/network-scripts/ifcfg-eth{{ hostvars[inventory_hostname].intnum }}
+          
+
+    - name: Copy VLAN interface config
+      template: src=ifcfg-et dest=/etc/sysconfig/network-scripts/ifcfg-eth{{ hostvars[inventory_hostname].intnum }}.{{ hostvars[inventory_hostname].vlan }}
+      notify:
+          - network restart
+

@@ -1,0 +1,7 @@
+DEVICE=eth{{ hostvars[inventory_hostname].intnum }}.{{ hostvars[inventory_hostname].vlan }}
+BOOTPROTO=none
+ONBOOT=yes
+IPADDR={{ hostvars[inventory_hostname].ip }}
+PREFIX=24
+NETWORK={{ hostvars[inventory_hostname].network }}
+VLAN=yes

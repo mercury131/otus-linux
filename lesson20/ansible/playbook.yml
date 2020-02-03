@@ -1,0 +1,7 @@
+---
+ - hosts: servers
+   become: true
+   tasks:
+   - include_role:
+        name: vlans
+

@@ -35,20 +35,29 @@ MACHINES = {
                 ]
   },
   :office1Router => {
-        :box_name => "centos/7",
+        :box_name => "cdaf/CentOSLVM",
         :net => [
                    {ip: '192.168.5.2', adapter: 2, netmask: "255.255.255.0", virtualbox__intnet: "office1-to-central"},
                    {ip: '192.168.2.1', adapter: 3, netmask: "255.255.255.192", virtualbox__intnet: "dev-net1"},
                    {ip: '192.168.2.129', adapter: 4, netmask: "255.255.255.192", virtualbox__intnet: "managers1"},
                    {ip: '192.168.2.193', adapter: 5, netmask: "255.255.255.192", virtualbox__intnet: "office1-hw"},
 				   {ip: '192.168.2.65', adapter: 6, netmask: "255.255.255.192", virtualbox__intnet: "test-servers1"},
+				   {adapter: 7, auto_config: false, virtualbox__intnet: "vlan-net"},
                 ]
   },
-    :office1Server => {
+    :TestServer1 => {
         :box_name => "centos/7",
         :net => [
                    {ip: '192.168.2.66', adapter: 2, netmask: "255.255.255.192", virtualbox__intnet: "test-servers1"},
-                   {adapter: 3, auto_config: false, virtualbox__intnet: true},
+                   {adapter: 3, auto_config: false, virtualbox__intnet: "vlan-net"},
+                   {adapter: 4, auto_config: false, virtualbox__intnet: true},
+                ]
+  },
+    :TestClient1 => {
+        :box_name => "centos/7",
+        :net => [
+                   {ip: '192.168.2.67', adapter: 2, netmask: "255.255.255.192", virtualbox__intnet: "test-servers1"},
+                   {adapter: 3, auto_config: false, virtualbox__intnet: "vlan-net"},
                    {adapter: 4, auto_config: false, virtualbox__intnet: true},
                 ]
   },
@@ -61,11 +70,19 @@ MACHINES = {
 				   {ip: '192.168.1.129', adapter: 5, netmask: "255.255.255.192", virtualbox__intnet: "test-servers2"},
                 ]
   },
-    :office2Server => {
+    :TestServer2 => {
         :box_name => "centos/7",
         :net => [
-                   {ip: '192.168.1.130', adapter: 2, netmask: "255.255.255.192", virtualbox__intnet: "test-servers2"},
-                   {adapter: 3, auto_config: false, virtualbox__intnet: true},
+                   {ip: '192.168.2.68', adapter: 2, netmask: "255.255.255.192", virtualbox__intnet: "test-servers1"},
+                   {adapter: 3, auto_config: false, virtualbox__intnet: "vlan-net"},
+                   {adapter: 4, auto_config: false, virtualbox__intnet: true},
+                ]
+  },
+    :TestClient2 => {
+        :box_name => "centos/7",
+        :net => [
+                   {ip: '192.168.2.69', adapter: 2, netmask: "255.255.255.192", virtualbox__intnet: "test-servers1"},
+                   {adapter: 3, auto_config: false, virtualbox__intnet: "vlan-net"},
                    {adapter: 4, auto_config: false, virtualbox__intnet: true},
                 ]
   },
@@ -102,18 +119,13 @@ Vagrant.configure("2") do |config|
 			sysctl net.ipv4.conf.all.forwarding=1
             iptables -t nat -A POSTROUTING ! -d 192.168.0.0/16 -o eth0 -j MASQUERADE
 			ip route add 192.168.0.0/20 via 192.168.255.2 dev eth1
-			cp /vagrant/ifcfg-bond0 /etc/sysconfig/network-scripts/ifcfg-bond0
-			cp /vagrant/ifcfg-eth2 /etc/sysconfig/network-scripts/ifcfg-eth2
-			cp /vagrant/ifcfg-eth3 /etc/sysconfig/network-scripts/ifcfg-eth3
-			cp /vagrant/bonding.conf /etc/modprobe.d/bonding.conf
-			sleep 120 && systemctl reload network &
+			cp -f /vagrant/ifcfg-bond0 /etc/sysconfig/network-scripts/ifcfg-bond0
+			cp -f /vagrant/ifcfg-eth2 /etc/sysconfig/network-scripts/ifcfg-eth2
+			cp -f /vagrant/ifcfg-eth3 /etc/sysconfig/network-scripts/ifcfg-eth3
+			cp -f /vagrant/bonding.conf /etc/modprobe.d/bonding.conf
+			sleep 120 && service network restart  &
 			#https://www.serverlab.ca/tutorials/linux/administration-linux/bonding-network-interfaces-in-centos-6/
 			#ip route add 192.168.2.64/26 via 192.168.255.3 dev eth1
-			#iptables -t nat -A POSTROUTING ! -d 192.168.0.0/16 -o eth0 -j MASQUERADE
-			#iptables -A INPUT -p icmp --icmp-type 8 -s 0/0 -d 192.168.0.0/16 -m state --state NEW,ESTABLISHED,RELATED -j ACCEPT
-			#iptables -A OUTPUT -p icmp --icmp-type 0 -s 192.168.255.1 -d 0/0 -m state --state ESTABLISHED,RELATED -j ACCEPT
-			#iptables -A OUTPUT -p icmp --icmp-type 8 -s 192.168.255.1 -d 0/0 -m state --state NEW,ESTABLISHED,RELATED -j ACCEPT
-			#iptables -A INPUT -p icmp --icmp-type 0 -s 0/0 -d 192.168.255.1 -m state --state ESTABLISHED,RELATED -j ACCEPT
             SHELL
         when "centralRouter"
           box.vm.provision "shell", run: "always", inline: <<-SHELL
@@ -150,23 +162,59 @@ Vagrant.configure("2") do |config|
             SHELL
         when "office1Router"
           box.vm.provision "shell", run: "always", inline: <<-SHELL
-            sysctl net.ipv4.conf.all.forwarding=1
+            yum install epel-release -y
+            yum install ansible vim -y
+            cp /vagrant/id_rsa /home/vagrant/.ssh/
+		    cp /vagrant/id_rsa /root/.ssh/
+		    chmod 0600 /root/.ssh/id_rsa
+            chown vagrant:vagrant /home/vagrant/.ssh/id_rsa 
+            chmod 0600 /home/vagrant/.ssh/id_rsa            
+			sysctl net.ipv4.conf.all.forwarding=1
             echo "DEFROUTE=no" >> /etc/sysconfig/network-scripts/ifcfg-eth0 
             echo "GATEWAY=192.168.255.2" >> /etc/sysconfig/network-scripts/ifcfg-eth1
             systemctl restart network
 			yum install traceroute-2.0.22-2.el7.x86_64 -y
 			ip route add 0.0.0.0/0 via 192.168.5.1 dev eth1
 			echo 1 > /proc/sys/net/ipv4/ip_forward
+			echo "192.168.2.66  TestServer1" >> /etc/hosts
 			#ip route del 0.0.0.0/0
+			          # Create project structure
+            mkdir ~/ansible
+		    mkdir -p /etc/ansible/roles/
+		    mkdir -p /home/vagrant/.ansible/roles/
+		    mkdir -p /root/.ansible/roles/
+			# rm -rf /root/.ansible/roles/ && rm -rf /home/vagrant/.ansible/roles/ && rm -rf /etc/ansible/roles/
+		    cp -r /vagrant/ansible/roles/ /etc/ansible/roles/ && cp -r /vagrant/ansible/roles /home/vagrant/.ansible/ && cp -r /vagrant/ansible/roles /root/.ansible/ &&  cp /vagrant/ansible/playbook.yml /home/vagrant/playbook.yml && cp /vagrant/ansible/inventory.yml /home/vagrant/.ansible/inventory.yml
+		    export ANSIBLE_HOST_KEY_CHECKING=false
+		    ssh-keyscan -H TestServer1 >> ~/.ssh/known_hosts
+		    # ansible-playbook /home/vagrant/playbook.yml  -i /home/vagrant/.ansible/inventory.yml
             SHELL
-        when "office1Server"
+        when "TestServer1"
+          box.vm.provision "shell", run: "always", inline: <<-SHELL
+            echo "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDQulD+SK4ggadzuJZdksaB7VVAXzDbeYHkd41savMnzxLiVXW4SFUXlBx4c1B8J4thzlgH/dXiDKgyPsjPPiHJaao446jJrJxBT/VATUg+MEYY48qUifCg9cTffAis512MhyvCGInfU2B/FMCz8zF9P0sDp+NoHWOCamawJ+B2Sk3r9VgtS30l34WTDBINbcqtlEq1IKTWHHLuDw84bRLHBF4x8bn6REYjb+UF98zHlhV539iikHjZSqQa1KHnp+1Ew9IY1WoUDukjwuAa6YGkWjO1ughAlZ4xpzgp1coOp+C0tTTI4V45soO2V2fG1xXIBqGteYv/oBDDZfQ6kj3z" >> /home/vagrant/.ssh/authorized_keys		
+		    mkdir /root/.ssh/
+		    echo "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDQulD+SK4ggadzuJZdksaB7VVAXzDbeYHkd41savMnzxLiVXW4SFUXlBx4c1B8J4thzlgH/dXiDKgyPsjPPiHJaao446jJrJxBT/VATUg+MEYY48qUifCg9cTffAis512MhyvCGInfU2B/FMCz8zF9P0sDp+NoHWOCamawJ+B2Sk3r9VgtS30l34WTDBINbcqtlEq1IKTWHHLuDw84bRLHBF4x8bn6REYjb+UF98zHlhV539iikHjZSqQa1KHnp+1Ew9IY1WoUDukjwuAa6YGkWjO1ughAlZ4xpzgp1coOp+C0tTTI4V45soO2V2fG1xXIBqGteYv/oBDDZfQ6kj3z" >> /root/.ssh/authorized_keys
+		    sudo systemctl stop firewalld
+            echo "DEFROUTE=no" >> /etc/sysconfig/network-scripts/ifcfg-eth0 
+            echo "GATEWAY=192.168.2.65" >> /etc/sysconfig/network-scripts/ifcfg-eth1
+            systemctl restart network
+			yum install traceroute-2.0.22-2.el7.x86_64 -y
+			#ip route add 0.0.0.0/0 via 192.168.2.65 dev eth1
+			#nmcli con add type vlan ifname VLAN10 dev eth2 id 10
+			#nmcli con add type vlan con-name VLAN10 dev eth2 id 10 ip4 10.10.10.1/24
+            SHELL
+			
+        when "TestClient1"
           box.vm.provision "shell", run: "always", inline: <<-SHELL
             echo "DEFROUTE=no" >> /etc/sysconfig/network-scripts/ifcfg-eth0 
             echo "GATEWAY=192.168.2.65" >> /etc/sysconfig/network-scripts/ifcfg-eth1
             systemctl restart network
 			yum install traceroute-2.0.22-2.el7.x86_64 -y
 			ip route add 0.0.0.0/0 via 192.168.2.65 dev eth1
+			nmcli con add type vlan ifname VLAN10 dev eth2 id 10
+			nmcli con add type vlan con-name VLAN10 dev eth2 id 10 ip4 10.10.10.254/24
             SHELL
+			
         when "office2Router"
           box.vm.provision "shell", run: "always", inline: <<-SHELL
             sysctl net.ipv4.conf.all.forwarding=1

@@ -1,0 +1,2 @@
+[servers]
+TestServer1 intnum=2 vlan=10 ip="10.10.10.1" network="10.10.10.0"

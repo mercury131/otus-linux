@@ -1,0 +1,4 @@
+DEVICE=eth{{ hostvars[inventory_hostname].intnum }}
+TYPE=Ethernet
+BOOTPROTO=none
+ONBOOT=yes
