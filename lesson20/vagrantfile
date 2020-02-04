@@ -108,6 +108,7 @@ Vagrant.configure("2") do |config|
 			sysctl net.ipv4.conf.all.forwarding=1
             iptables -t nat -A POSTROUTING ! -d 192.168.0.0/16 -o eth0 -j MASQUERADE
 			ip route add 192.168.0.0/20 via 192.168.255.2 dev eth1
+			echo "192.168.0.0/20 via 192.168.255.2" >> /etc/sysconfig/network-scripts/route-eth1
 			#cp -f /vagrant/ifcfg-bond0 /etc/sysconfig/network-scripts/ifcfg-bond0
 			#cp -f /vagrant/ifcfg-eth2 /etc/sysconfig/network-scripts/ifcfg-eth2
 			#cp -f /vagrant/ifcfg-eth3 /etc/sysconfig/network-scripts/ifcfg-eth3
