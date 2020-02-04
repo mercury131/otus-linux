@@ -1,0 +1,4 @@
+---
+    intnum1: 9
+    intnum2: 11
+    netmask: "255.255.255.0"

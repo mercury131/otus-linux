@@ -1,0 +1,17 @@
+---
+     
+
+    - name: Copy interface config 1
+      template: src=ifcfg-eth dest=/etc/sysconfig/network-scripts/ifcfg-eth{{ hostvars[inventory_hostname].intnum1 }}
+      
+    - name: Copy interface config 2
+      template: src=ifcfg-et dest=/etc/sysconfig/network-scripts/ifcfg-eth{{ hostvars[inventory_hostname].intnum2 }}
+     
+    - name: Copy interface config 1
+      copy: src=bonding.conf dest=/etc/modprobe.d/bonding.conf     
+
+    - name: Copy BOND interface config
+      template: src=ifcfg-bond0 dest=/etc/sysconfig/network-scripts/ifcfg-bond0
+      notify:
+          - network restart
+
