@@ -6,5 +6,5 @@ TestClient2 intnum=2 vlan=12 ip="10.10.10.254" network="10.10.10.0"
 
 
 [serversbond]
-inetRouter ansible_user=vagrant intnum1=2 intnum2=3 ip="10.10.11.2" netmask="255.255.255.0"
-centralRouter intnum1=3 intnum2=4 ip="10.10.11.3" netmask="255.255.255.0"
+inetRouter ansible_user=vagrant intnum1=2 intnum2=3 ip="10.10.11.2" netmask="255.255.255.0" centos6="yes"
+centralRouter intnum1=3 intnum2=4 ip="10.10.11.3" netmask="255.255.255.0" centos7="yes"

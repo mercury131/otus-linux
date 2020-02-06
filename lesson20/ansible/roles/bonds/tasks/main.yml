@@ -8,10 +8,18 @@
       template: src=ifcfg-et dest=/etc/sysconfig/network-scripts/ifcfg-eth{{ hostvars[inventory_hostname].intnum2 }}
      
     - name: Copy interface config 1
-      copy: src=bonding.conf dest=/etc/modprobe.d/bonding.conf     
+      copy: src=bonding.conf dest=/etc/modprobe.d/bonding.conf
+      when: (ansible_facts['distribution'] == "CentOS" and ansible_facts['distribution_major_version'] == "6")
 
     - name: Copy BOND interface config
       template: src=ifcfg-bond0 dest=/etc/sysconfig/network-scripts/ifcfg-bond0
+      when: (ansible_facts['distribution'] == "CentOS" and ansible_facts['distribution_major_version'] == "6")
+      notify:
+          - network restart
+          
+    - name: Copy BOND interface config
+      template: src=ifcfg-bond dest=/etc/sysconfig/network-scripts/ifcfg-bond0
+      when: (ansible_facts['distribution'] == "CentOS" and ansible_facts['distribution_major_version'] == "7")
       notify:
           - network restart
 
