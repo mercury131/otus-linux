@@ -1,0 +1,114 @@
+# -*- mode: ruby -*-
+# vim: set ft=ruby :
+# -*- mode: ruby -*-
+# vim: set ft=ruby :
+
+MACHINES = {
+:vpnserver1 => {
+        :box_name => "cdaf/CentOSLVM",
+        #:public => {:ip => '10.10.10.1', :adapter => 1},
+        :net => [
+                   {ip: '192.168.255.1', adapter: 2, netmask: "255.255.255.248", virtualbox__intnet: "management-net"},
+				   {adapter: 3, auto_config: false, virtualbox__intnet: "tun-net"},
+				   {adapter: 4, auto_config: false, virtualbox__intnet: "tap-net"},
+				   {ip: '192.168.10.1', adapter: 2, netmask: "255.255.255.0", virtualbox__intnet: "management-net2"},
+                ]
+  },
+ 
+ :vpnclient2 => {
+        :box_name => "cdaf/CentOSLVM",
+        #:public => {:ip => '10.10.10.1', :adapter => 1},
+        :net => [
+                   {ip: '192.168.255.2', adapter: 2, netmask: "255.255.255.248", virtualbox__intnet: "management-net"},
+				   {adapter: 3, auto_config: false, virtualbox__intnet: "tun-net"},
+				   {adapter: 4, auto_config: false, virtualbox__intnet: "tap-net"},
+				   {ip: '192.168.10.2', adapter: 2, netmask: "255.255.255.0", virtualbox__intnet: "management-net2"},
+                ]
+  },
+  
+
+  
+}
+
+Vagrant.configure("2") do |config|
+
+  MACHINES.each do |boxname, boxconfig|
+
+    config.vm.define boxname do |box|
+
+        box.vm.box = boxconfig[:box_name]
+        box.vm.host_name = boxname.to_s
+		
+		
+        boxconfig[:net].each do |ipconf|
+          box.vm.network "private_network", ipconf
+        end
+        
+        if boxconfig.key?(:public)
+          box.vm.network "public_network", boxconfig[:public]
+        end
+		
+
+        box.vm.provision "shell", inline: <<-SHELL
+          mkdir -p ~root/.ssh
+                cp ~vagrant/.ssh/auth* ~root/.ssh
+        SHELL
+        
+        case boxname.to_s
+        when "vpnserver1"
+          box.vm.provision "shell", run: "always", inline: <<-SHELL
+		    mkdir /root/.ssh/
+            #sysctl net.ipv4.conf.all.forwarding=1
+			setenforce 0
+			systemctl stop firewalld
+			yum install -y epel-release
+			yum install -y openvpn iperf3
+			#openvpn --genkey --secret /etc/openvpn/static.key
+			#cp /etc/openvpn/static.key /vagrant/openvpn/
+			cp /vagrant/openvpn/static.key /etc/openvpn/static.key
+			cp /vagrant/openvpn/tap/server.conf /etc/openvpn/server.conf
+			systemctl start openvpn@server
+			systemctl enable openvpn@server
+			cp /vagrant/openvpn/ttun/server.conf /etc/openvpn/servertun.conf
+			systemctl start openvpn@servertun
+			systemctl enable openvpn@servertun
+			iperf3 -s &
+			
+
+            SHELL
+        when "vpnclient2"
+		  box.vm.network "forwarded_port", guest: 8080, host: 8081
+          box.vm.provision "shell", run: "always", inline: <<-SHELL
+            #sysctl net.ipv4.conf.all.forwarding=1
+			systemctl stop firewalld
+			setenforce 0
+			systemctl stop firewalld
+			yum install -y epel-release
+			yum install -y openvpn iperf3
+			openvpn --genkey --secret /etc/openvpn/static.key
+			cp /vagrant/openvpn/static.key /etc/openvpn/static.key
+			cp /vagrant/openvpn/client/tap/server.conf /etc/openvpn/server.conf
+			cp /vagrant/openvpn/client/tun/server.conf /etc/openvpn/servertun.conf
+			systemctl start openvpn@server
+			systemctl enable openvpn@server
+			systemctl start openvpn@servertun
+			systemctl enable openvpn@servertun
+			echo "TEST TAP #########################################################"
+			iperf3 -c 10.10.10.1 -t 40 -i 5
+			echo "TEST TUN #########################################################"
+			iperf3 -c 10.11.10.4 -t 40 -i 5
+
+            SHELL
+        
+
+
+
+        end
+
+      end
+
+  end
+  
+  
+end
+
