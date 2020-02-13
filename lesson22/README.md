@@ -141,3 +141,146 @@ rtt min/avg/max/mdev = 0.661/0.855/1.210/0.223 ms
 Разница между TUN и TAP в том что TAP работает на канальном уровне, в то время как TUN работает на сетевом уровне модели OSI.
 
 Соответственно TAP интерфейс имеет больший оверхед чем TUN, т.к. оперирует кадрами ethernet, а не ip пакетами как TAP.
+
+
+
+Используемые конфиги:
+
+Сервер TUN:
+
+```
+
+local 192.168.10.1
+port 1195
+dev tun
+ifconfig 10.11.10.4 255.255.255.0
+topology subnet
+secret /etc/openvpn/static.key
+comp-lzo
+status /var/log/openvpn-status2.log
+log /var/log/openvpn2.log
+verb 3
+
+```
+
+Клиент TUN:
+
+```
+dev tun
+port 1195
+remote 192.168.10.1
+ifconfig 10.11.10.5 255.255.255.0
+topology subnet
+route 192.168.10.0 255.255.255.0
+secret /etc/openvpn/static.key
+comp-lzo
+status /var/log/openvpn-status2.log
+log /var/log/openvpn2.log
+verb 3
+
+```
+
+Сервер TAP:
+
+```
+local 192.168.255.1
+dev tap
+ifconfig 10.10.10.1 255.255.255.0
+topology subnet
+secret /etc/openvpn/static.key
+comp-lzo
+status /var/log/openvpn-status.log
+log /var/log/openvpn.log
+verb 3
+
+```
+
+Клиент TAP:
+
+```
+dev tap
+remote 192.168.255.1
+ifconfig 10.10.10.2 255.255.255.0
+topology subnet
+route 192.168.255.0 255.255.255.248
+secret /etc/openvpn/static.key
+comp-lzo
+status /var/log/openvpn-status.log
+log /var/log/openvpn.log
+verb 3
+
+```
+
+
+Сервер TUN (подключение по сертификату):
+
+```
+port 1207
+proto udp
+dev tun
+ca /etc/openvpn/pki/ca.crt
+cert /etc/openvpn/pki/issued/server.crt
+key /etc/openvpn/pki/private/server.key
+dh /etc/openvpn/pki/dh.pem
+server 10.10.10.0 255.255.255.0
+topology subnet
+client-to-client
+client-config-dir /etc/openvpn/client
+keepalive 10 120
+comp-lzo
+persist-key
+persist-tun
+status /var/log/openvpn-status.log
+log /var/log/openvpn.log
+verb 3
+
+```
+
+Клиент TUN (подключение по сертификату):
+
+```
+dev tun
+proto udp
+remote 192.168.255.3 1207
+client
+resolv-retry infinite
+ca ./ca.crt
+cert ./client.crt
+key ./client.key
+persist-key
+persist-tun
+comp-lzo
+verb 3
+```
+
+Метод генерации сертификатов (используется easyrsa):
+
+```
+yum install -y easy-rsa
+```
+
+```
+cd /etc/openvpn/
+/usr/share/easy-rsa/3.0.3/easyrsa init-pki
+echo 'rasvpn' | /usr/share/easy-rsa/3.0.3/easyrsa build-ca nopass
+echo 'rasvpn' | /usr/share/easy-rsa/3.0.3/easyrsa gen-req server nopass
+echo 'yes' | /usr/share/easy-rsa/3.0.3/easyrsa sign-req server server
+/usr/share/easy-rsa/3.0.3/easyrsa gen-dh
+openvpn --genkey --secret ta.key
+```
+
+Сертификаты клиента:
+
+
+```
+echo 'client' | /usr/share/easy-rsa/3/easyrsa gen-req client  nopass
+echo 'yes' | /usr/share/easy-rsa/3/easyrsa sign-req client client
+```
+
+Сертификаты используемые на клиенте:
+
+```
+/etc/openvpn/pki/ca.crt
+/etc/openvpn/pki/issued/client.crt
+/etc/openvpn/pki/private/client.key
+```
