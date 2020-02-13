@@ -4,13 +4,13 @@
 - **VirtualBox** - ПО для создания виртуальных окружений
 - **Vagrant** - ПО для конфигурирования/шаблонизирования виртуальных машин
 - **Git** - система контроля версий
-- **Linux net tools** - сетевые утилиты Linux
+- **OpenVPN** - утилита для создания VPN соединений
 
 
 
 Используемые репозитории:
 - **https://github.com/mercury131/otus-linux** - репозиторий для выполнения домашних заданий OTUS
-- **https://github.com/mercury131/otus-linux/tree/master/lesson21** - ссылка на данное домашнее задание
+- **https://github.com/mercury131/otus-linux/tree/master/lesson22** - ссылка на данное домашнее задание
 
 
  
@@ -18,17 +18,16 @@
 
 В рамках данного домашнего задания выполнено:
 
-Сценарии iptables
-1) реализовать knocking port
-- centralRouter может попасть на ssh inetrRouter через knock скрипт
-пример в материалах
-2) добавить inetRouter2, который виден(маршрутизируется (host-only тип сети для виртуалки)) с хоста или форвардится порт через локалхост
-3) запустить nginx на centralServer
-4) пробросить 80й порт на inetRouter2 8080
-5) дефолт в инет оставить через inetRouter
+VPN
+1. Между двумя виртуалками поднять vpn в режимах
+- tun
+- tap
+Прочуствовать разницу.
+
+2. Поднять RAS на базе OpenVPN с клиентскими сертификатами, подключиться с локальной машины на виртуалку
 
 Используемые файлы и директории:
-- В директории lesson21 расположен Vagrantfile с образом Centos 6/7 и автоматическими шагами развертывания
+- В директории lesson22 расположен Vagrantfile с образом Centos 7 и автоматическими шагами развертывания
 
 
 
@@ -49,62 +48,96 @@ vagrant plugin install vagrant-reload
 Для запуска Vagrantfile автоматизированными шагами выполните:
 
 ```
-cd otus-linux/lesson21
+cd otus-linux/lesson22
 vagrant up 
 ```
 
-Открыть в браузере страницу http://127.0.0.1:8081/ и убедиться что проброс портов с inetRouter2 на centralServer работает
-
-
-Далее зайти по ssh на centralRouter и проверить knock скрипт:
+Посмотреть выполненный Vagrant Provisioning  и убедиться что были запущены тесты iperf и выполнен ping от клиентской машины к vpn серверу (подключение по сертификатам.)
 
 ```
-vagrant ssh centralRouter
-sudo -i
-
-[root@centralRouter ~]# bash knock.sh 192.168.255.1 8881 7777 9991
-
-Starting Nmap 6.40 ( http://nmap.org ) at 2020-02-05 10:04 UTC
-Warning: 192.168.255.1 giving up on port because retransmission cap hit (0).
-Nmap scan report for 192.168.255.1
-Host is up (0.00027s latency).
-PORT     STATE    SERVICE
-8881/tcp filtered unknown
-MAC Address: 08:00:27:C3:29:7B (Cadmus Computer Systems)
-
-Nmap done: 1 IP address (1 host up) scanned in 0.18 seconds
-
-Starting Nmap 6.40 ( http://nmap.org ) at 2020-02-05 10:04 UTC
-Warning: 192.168.255.1 giving up on port because retransmission cap hit (0).
-Nmap scan report for 192.168.255.1
-Host is up (0.00028s latency).
-PORT     STATE    SERVICE
-7777/tcp filtered cbt
-MAC Address: 08:00:27:C3:29:7B (Cadmus Computer Systems)
-
-Nmap done: 1 IP address (1 host up) scanned in 0.17 seconds
-
-Starting Nmap 6.40 ( http://nmap.org ) at 2020-02-05 10:04 UTC
-Warning: 192.168.255.1 giving up on port because retransmission cap hit (0).
-Nmap scan report for 192.168.255.1
-Host is up (0.00027s latency).
-PORT     STATE    SERVICE
-9991/tcp filtered issa
-MAC Address: 08:00:27:C3:29:7B (Cadmus Computer Systems)
-
-Nmap done: 1 IP address (1 host up) scanned in 0.18 seconds
-The authenticity of host '192.168.255.1 (192.168.255.1)' can't be established.
-RSA key fingerprint is SHA256:fdkbrbGjGdkOiNu3bXiQLBawyBlKfg+M474P34kMuEk.
-RSA key fingerprint is MD5:33:25:7e:6d:09:32:1b:a3:04:85:18:c8:b7:3d:f4:22.
-Are you sure you want to continue connecting (yes/no)? yes
-Warning: Permanently added '192.168.255.1' (RSA) to the list of known hosts.
-[vagrant@inetRouter ~]$
-```
-
-Без knock скрипта подключиться не получится:
-
-```
-[root@centralRouter ~]# ssh 192.168.255.1
+    vpnclient2: TEST TAP #########################################################
+    vpnclient2: Connecting to host 10.10.10.1, port 5201
+    vpnclient2: [  4] local 10.10.10.2 port 41922 connected to 10.10.10.1 port 5201
+    vpnclient2: [ ID] Interval           Transfer     Bandwidth       Retr  Cwnd
+    vpnclient2: [  4]   0.00-5.00   sec  33.2 MBytes  55.8 Mbits/sec   20    212 KBytes
+    vpnclient2: [  4]   5.00-10.01  sec  40.7 MBytes  68.2 Mbits/sec    9    190 KBytes
+    vpnclient2: [  4]  10.01-15.00  sec  44.8 MBytes  75.2 Mbits/sec   14    179 KBytes
+    vpnclient2: [  4]  15.00-20.00  sec  44.8 MBytes  75.2 Mbits/sec   13    179 KBytes
+    vpnclient2: [  4]  20.00-25.00  sec  44.6 MBytes  74.9 Mbits/sec    7    184 KBytes
+    vpnclient2: [  4]  25.00-30.01  sec  46.1 MBytes  77.2 Mbits/sec    4    190 KBytes
+    vpnclient2: [  4]  30.01-35.01  sec  46.9 MBytes  78.6 Mbits/sec    3    227 KBytes
+    vpnclient2: [  4]  35.01-40.00  sec  44.8 MBytes  75.2 Mbits/sec    6    223 KBytes
+    vpnclient2: - - - - - - - - - - - - - - - - - - - - - - - - -
+    vpnclient2: [ ID] Interval           Transfer     Bandwidth       Retr
+    vpnclient2: [  4]   0.00-40.00  sec   346 MBytes  72.5 Mbits/sec   76             sender
+    vpnclient2: [  4]   0.00-40.00  sec   345 MBytes  72.3 Mbits/sec                  receiver
+    vpnclient2:
+    vpnclient2: iperf Done.
+	
+	
+    vpnclient2: TEST TUN #########################################################
+    vpnclient2: Connecting to host 10.11.10.4, port 555
+    vpnclient2: [  4] local 10.11.10.5 port 51606 connected to 10.11.10.4 port 555
+    vpnclient2: [ ID] Interval           Transfer     Bandwidth       Retr  Cwnd
+    vpnclient2: [  4]   0.00-5.01   sec  45.3 MBytes  75.9 Mbits/sec   15    215 KBytes
+    vpnclient2: [  4]   5.01-10.00  sec  49.7 MBytes  83.5 Mbits/sec    4    223 KBytes
+    vpnclient2: [  4]  10.00-15.00  sec  45.9 MBytes  76.9 Mbits/sec    7    251 KBytes
+    vpnclient2: [  4]  15.00-20.00  sec  42.6 MBytes  71.5 Mbits/sec   14    238 KBytes
+    vpnclient2: [  4]  20.00-25.01  sec  43.3 MBytes  72.5 Mbits/sec    5    242 KBytes
+    vpnclient2: [  4]  25.01-30.01  sec  46.1 MBytes  77.4 Mbits/sec    6    240 KBytes
+    vpnclient2: [  4]  30.01-35.00  sec  43.2 MBytes  72.5 Mbits/sec    5    247 KBytes
+    vpnclient2: [  4]  35.00-40.00  sec  44.5 MBytes  74.7 Mbits/sec    3    244 KBytes
+    vpnclient2: - - - - - - - - - - - - - - - - - - - - - - - - -
+    vpnclient2: [ ID] Interval           Transfer     Bandwidth       Retr
+    vpnclient2: [  4]   0.00-40.00  sec   361 MBytes  75.6 Mbits/sec   59             sender
+    vpnclient2: [  4]   0.00-40.00  sec   360 MBytes  75.5 Mbits/sec                  receiver
+    vpnclient2:
+    vpnclient2: iperf Done.
 
 
 ```
+
+
+```
+[vagrant@clientras2 ~]$ ip a
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host
+       valid_lft forever preferred_lft forever
+2: enp0s3: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP group default qlen 1000
+    link/ether 08:00:27:ae:50:9e brd ff:ff:ff:ff:ff:ff
+    inet 10.0.2.15/24 brd 10.0.2.255 scope global noprefixroute dynamic enp0s3
+       valid_lft 86249sec preferred_lft 86249sec
+    inet6 fe80::e48:1f70:b88d:b3f6/64 scope link noprefixroute
+       valid_lft forever preferred_lft forever
+3: enp0s8: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP group default qlen 1000
+    link/ether 08:00:27:ed:53:d4 brd ff:ff:ff:ff:ff:ff
+    inet 192.168.255.4/29 brd 192.168.255.7 scope global noprefixroute enp0s8
+       valid_lft forever preferred_lft forever
+    inet6 fe80::a00:27ff:feed:53d4/64 scope link
+       valid_lft forever preferred_lft forever
+4: tun0: <POINTOPOINT,MULTICAST,NOARP,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UNKNOWN group default qlen 100
+    link/none
+    inet 10.10.10.2/24 brd 10.10.10.255 scope global tun0
+       valid_lft forever preferred_lft forever
+    inet6 fe80::f7e0:1ac9:a9fe:135e/64 scope link flags 800
+       valid_lft forever preferred_lft forever
+[vagrant@clientras2 ~]$ ping 10.10.10.1
+PING 10.10.10.1 (10.10.10.1) 56(84) bytes of data.
+64 bytes from 10.10.10.1: icmp_seq=1 ttl=64 time=1.02 ms
+64 bytes from 10.10.10.1: icmp_seq=2 ttl=64 time=0.661 ms
+64 bytes from 10.10.10.1: icmp_seq=3 ttl=64 time=1.21 ms
+64 bytes from 10.10.10.1: icmp_seq=4 ttl=64 time=0.665 ms
+64 bytes from 10.10.10.1: icmp_seq=5 ttl=64 time=0.714 ms
+^C
+--- 10.10.10.1 ping statistics ---
+5 packets transmitted, 5 received, 0% packet loss, time 4005ms
+rtt min/avg/max/mdev = 0.661/0.855/1.210/0.223 ms
+
+```
+
+Разница между TUN и TAP в том что TAP работает на канальном уровне, в то время как TUN работает на сетевом уровне модели OSI.
+
+Соответственно TAP интерфейс имеет больший оверхед чем TUN, т.к. оперирует кадрами ethernet, а не ip пакетами как TAP.
