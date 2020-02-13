@@ -29,6 +29,7 @@ VPN
 Используемые файлы и директории:
 - В директории lesson22 расположен Vagrantfile с образом Centos 7 и автоматическими шагами развертывания
 
+3*. Самостоятельно изучить, поднять ocserv и подключиться с хоста к виртуалке 
 
 
 # Как проверить домашнее задание?
@@ -283,4 +284,62 @@ echo 'yes' | /usr/share/easy-rsa/3/easyrsa sign-req client client
 /etc/openvpn/pki/ca.crt
 /etc/openvpn/pki/issued/client.crt
 /etc/openvpn/pki/private/client.key
+```
+
+Также поднята VM с ocserv. 
+
+Установка и настройка VM:
+
+```
+sysctl net.ipv4.conf.all.forwarding=1
+setenforce 0
+yum install -y epel-release
+yum update -y
+yum install -y ocserv gnutls-utils
+mkdir /etc/ocserv/cert
+cd /etc/ocserv/cert/
+cp /vagrant/ocserv/ca.tmpl /etc/ocserv/cert/ca.tmpl
+certtool --generate-privkey --outfile ca-key.pem
+certtool --generate-self-signed --load-privkey ca-key.pem --template ca.tmpl --outfile ca-cert.pem
+cp /vagrant/ocserv/server.tmpl /etc/ocserv/server.tmpl
+certtool --generate-privkey --outfile server-key.pem
+certtool --generate-certificate --load-privkey server-key.pem --load-ca-certificate ca-cert.pem --load-ca-privkey ca-key.pem --template /etc/ocserv/server.tmpl --outfile server-cert.pem
+mkdir /etc/ocserv/ssl/
+cp -f ca-cert.pem server-key.pem server-cert.pem /etc/ocserv/ssl/
+mv /etc/ocserv/ocserv.conf /etc/ocserv/ocserv.conf.bak
+cp -f /vagrant/ocserv/ocserv.conf /etc/ocserv/ocserv.conf
+firewall-cmd --add-port=443/tcp --permanent
+firewall-cmd --add-port=443/udp --permanent
+firewall-cmd --permanent --add-masquerade
+csf -r
+echo "net.ipv4.ip_forward = 1" >>  /etc/sysctl.conf
+touch /etc/ocserv/passwd
+ocpasswd -c /etc/ocserv/passwd -g default test
+systemctl start ocserv
+systemctl enable ocserv
+systemctl status ocserv
+
+
+[root@ocserv ~]# systemctl status ocserv
+● ocserv.service - OpenConnect SSL VPN server
+   Loaded: loaded (/usr/lib/systemd/system/ocserv.service; enabled; vendor preset: disabled)
+   Active: active (running) since Thu 2020-02-13 23:53:10 NZDT; 17min ago
+     Docs: man:ocserv(8)
+ Main PID: 4646 (ocserv-main)
+   CGroup: /system.slice/ocserv.service
+           ├─4646 ocserv-main
+           └─4661 ocserv-sm
+
+Feb 13 23:53:10 ocserv ocserv[4646]: note: skipping 'pid-file' config option
+Feb 13 23:53:10 ocserv ocserv[4646]: note: setting 'plain' as primary authentication method
+Feb 13 23:53:10 ocserv ocserv[4646]: note: setting 'file' as supplemental config option
+Feb 13 23:53:10 ocserv ocserv[4646]: listening (TCP) on 0.0.0.0:443...
+Feb 13 23:53:10 ocserv ocserv[4646]: listening (TCP) on [::]:443...
+Feb 13 23:53:10 ocserv ocserv[4646]: main: initialized ocserv 0.12.6
+Feb 13 23:53:10 ocserv ocserv[4646]: listening (UDP) on 0.0.0.0:443...
+Feb 13 23:53:10 ocserv ocserv[4646]: listening (UDP) on [::]:443...
+Feb 13 23:53:10 ocserv ocserv[4661]: sec-mod: reading supplemental config from files
+Feb 13 23:53:10 ocserv ocserv[4661]: sec-mod: sec-mod initialized (socket: /var/lib/ocserv/ocserv.sock.d99691da)
+
+
 ```

@@ -46,6 +46,16 @@ MACHINES = {
                 ]
   },
   
+  
+ :ocserv => {
+        :box_name => "cdaf/CentOSLVM",
+        #:public => {:ip => '10.10.10.1', :adapter => 1},
+        :net => [
+                   {ip: '192.168.15.1', adapter: 2, netmask: "255.255.255.0", virtualbox__intnet: "ocserv-net"},
+
+                ]
+  },
+  
 
   
 }
@@ -148,6 +158,43 @@ Vagrant.configure("2") do |config|
 			systemctl start openvpn@server
 			openvpn --config client.conf & 
 			ping -c 4 10.10.10.1
+			
+
+            SHELL
+			
+        when "ocserv"
+          box.vm.provision "shell", run: "always", inline: <<-SHELL
+            #sysctl net.ipv4.conf.all.forwarding=1
+			#systemctl stop firewalld
+			sysctl net.ipv4.conf.all.forwarding=1
+			setenforce 0
+			yum install -y epel-release
+			yum update -y
+			yum install -y ocserv gnutls-utils
+			mkdir /etc/ocserv/cert
+			cd /etc/ocserv/cert/
+			cp /vagrant/ocserv/ca.tmpl /etc/ocserv/cert/ca.tmpl
+			certtool --generate-privkey --outfile ca-key.pem
+			certtool --generate-self-signed --load-privkey ca-key.pem --template ca.tmpl --outfile ca-cert.pem
+			cp /vagrant/ocserv/server.tmpl /etc/ocserv/server.tmpl
+			certtool --generate-privkey --outfile server-key.pem
+			certtool --generate-certificate --load-privkey server-key.pem --load-ca-certificate ca-cert.pem --load-ca-privkey ca-key.pem --template /etc/ocserv/server.tmpl --outfile server-cert.pem
+			mkdir /etc/ocserv/ssl/
+			cp -f ca-cert.pem server-key.pem server-cert.pem /etc/ocserv/ssl/
+			mv /etc/ocserv/ocserv.conf /etc/ocserv/ocserv.conf.bak
+			cp -f /vagrant/ocserv/ocserv.conf /etc/ocserv/ocserv.conf
+			firewall-cmd --add-port=443/tcp --permanent
+			firewall-cmd --add-port=443/udp --permanent
+			firewall-cmd --permanent --add-masquerade
+			csf -r
+			echo "net.ipv4.ip_forward = 1" >>  /etc/sysctl.conf
+			touch /etc/ocserv/passwd
+			ocpasswd -c /etc/ocserv/passwd -g default test
+			systemctl start ocserv
+			systemctl enable ocserv
+			systemctl status ocserv
+			
+
 			
 
             SHELL
