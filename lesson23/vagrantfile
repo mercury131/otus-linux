@@ -1,0 +1,134 @@
+# -*- mode: ruby -*-
+# vim: set ft=ruby :
+# -*- mode: ruby -*-
+# vim: set ft=ruby :
+
+MACHINES = {
+:Router1 => {
+        :box_name => "cdaf/CentOSLVM",
+        #:public => {:ip => '10.10.10.1', :adapter => 1},
+        :net => [
+                   {ip: '192.168.40.1', adapter: 2, netmask: "255.255.255.0", virtualbox__intnet: "router-net1"},
+				   {ip: '192.168.20.1', adapter: 3, netmask: "255.255.255.0", virtualbox__intnet: "router-net2"},
+                ]
+  },
+  :Router2 => {
+        :box_name => "cdaf/CentOSLVM",
+        :net => [
+                   {ip: '192.168.40.2', adapter: 2, netmask: "255.255.255.0", virtualbox__intnet: "router-net1"},
+				   {ip: '192.168.30.2', adapter: 3, netmask: "255.255.255.0", virtualbox__intnet: "router-net3"},
+
+                ]
+  },
+  
+  :Router3 => {
+        :box_name => "cdaf/CentOSLVM",
+        :net => [
+                   {ip: '192.168.20.2', adapter: 2, netmask: "255.255.255.0", virtualbox__intnet: "router-net2"},
+				   {ip: '192.168.30.1', adapter: 3, netmask: "255.255.255.0", virtualbox__intnet: "router-net3"},
+                ]
+  },
+
+  
+}
+
+Vagrant.configure("2") do |config|
+
+  MACHINES.each do |boxname, boxconfig|
+
+    config.vm.define boxname do |box|
+
+        box.vm.box = boxconfig[:box_name]
+        box.vm.host_name = boxname.to_s
+
+        boxconfig[:net].each do |ipconf|
+          box.vm.network "private_network", ipconf
+        end
+        
+        if boxconfig.key?(:public)
+          box.vm.network "public_network", boxconfig[:public]
+        end
+
+        box.vm.provision "shell", inline: <<-SHELL
+          mkdir -p ~root/.ssh
+                cp ~vagrant/.ssh/auth* ~root/.ssh
+        SHELL
+        
+        case boxname.to_s
+        when "Router1"
+          box.vm.provision "shell", run: "always", inline: <<-SHELL
+            echo "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDQulD+SK4ggadzuJZdksaB7VVAXzDbeYHkd41savMnzxLiVXW4SFUXlBx4c1B8J4thzlgH/dXiDKgyPsjPPiHJaao446jJrJxBT/VATUg+MEYY48qUifCg9cTffAis512MhyvCGInfU2B/FMCz8zF9P0sDp+NoHWOCamawJ+B2Sk3r9VgtS30l34WTDBINbcqtlEq1IKTWHHLuDw84bRLHBF4x8bn6REYjb+UF98zHlhV539iikHjZSqQa1KHnp+1Ew9IY1WoUDukjwuAa6YGkWjO1ughAlZ4xpzgp1coOp+C0tTTI4V45soO2V2fG1xXIBqGteYv/oBDDZfQ6kj3z" >> /home/vagrant/.ssh/authorized_keys		
+		    mkdir /root/.ssh/
+		    echo "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDQulD+SK4ggadzuJZdksaB7VVAXzDbeYHkd41savMnzxLiVXW4SFUXlBx4c1B8J4thzlgH/dXiDKgyPsjPPiHJaao446jJrJxBT/VATUg+MEYY48qUifCg9cTffAis512MhyvCGInfU2B/FMCz8zF9P0sDp+NoHWOCamawJ+B2Sk3r9VgtS30l34WTDBINbcqtlEq1IKTWHHLuDw84bRLHBF4x8bn6REYjb+UF98zHlhV539iikHjZSqQa1KHnp+1Ew9IY1WoUDukjwuAa6YGkWjO1ughAlZ4xpzgp1coOp+C0tTTI4V45soO2V2fG1xXIBqGteYv/oBDDZfQ6kj3z" >> /root/.ssh/authorized_keys
+		    sudo systemctl stop firewalld
+			yum install epel-release  -y
+            yum install libselinux-python -y
+			sysctl net.ipv4.conf.all.forwarding=1
+			echo "net.ipv4.ip_forward = 1" >> /etc/sysctl.conf
+			setenforce 0
+            SHELL
+			
+        when "Router2"
+          box.vm.provision "shell", run: "always", inline: <<-SHELL
+            echo "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDQulD+SK4ggadzuJZdksaB7VVAXzDbeYHkd41savMnzxLiVXW4SFUXlBx4c1B8J4thzlgH/dXiDKgyPsjPPiHJaao446jJrJxBT/VATUg+MEYY48qUifCg9cTffAis512MhyvCGInfU2B/FMCz8zF9P0sDp+NoHWOCamawJ+B2Sk3r9VgtS30l34WTDBINbcqtlEq1IKTWHHLuDw84bRLHBF4x8bn6REYjb+UF98zHlhV539iikHjZSqQa1KHnp+1Ew9IY1WoUDukjwuAa6YGkWjO1ughAlZ4xpzgp1coOp+C0tTTI4V45soO2V2fG1xXIBqGteYv/oBDDZfQ6kj3z" >> /home/vagrant/.ssh/authorized_keys		
+		    mkdir /root/.ssh/
+		    echo "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDQulD+SK4ggadzuJZdksaB7VVAXzDbeYHkd41savMnzxLiVXW4SFUXlBx4c1B8J4thzlgH/dXiDKgyPsjPPiHJaao446jJrJxBT/VATUg+MEYY48qUifCg9cTffAis512MhyvCGInfU2B/FMCz8zF9P0sDp+NoHWOCamawJ+B2Sk3r9VgtS30l34WTDBINbcqtlEq1IKTWHHLuDw84bRLHBF4x8bn6REYjb+UF98zHlhV539iikHjZSqQa1KHnp+1Ew9IY1WoUDukjwuAa6YGkWjO1ughAlZ4xpzgp1coOp+C0tTTI4V45soO2V2fG1xXIBqGteYv/oBDDZfQ6kj3z" >> /root/.ssh/authorized_keys
+		    sudo systemctl stop firewalld
+			yum install epel-release  -y
+            yum install libselinux-python -y
+			sysctl net.ipv4.conf.all.forwarding=1
+			echo "net.ipv4.ip_forward = 1" >> /etc/sysctl.conf
+			setenforce 0
+
+            SHELL
+
+        when "Router3"
+          box.vm.provision "shell", run: "always", inline: <<-SHELL
+            yum install epel-release -y
+			setenforce 0
+            echo "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDQulD+SK4ggadzuJZdksaB7VVAXzDbeYHkd41savMnzxLiVXW4SFUXlBx4c1B8J4thzlgH/dXiDKgyPsjPPiHJaao446jJrJxBT/VATUg+MEYY48qUifCg9cTffAis512MhyvCGInfU2B/FMCz8zF9P0sDp+NoHWOCamawJ+B2Sk3r9VgtS30l34WTDBINbcqtlEq1IKTWHHLuDw84bRLHBF4x8bn6REYjb+UF98zHlhV539iikHjZSqQa1KHnp+1Ew9IY1WoUDukjwuAa6YGkWjO1ughAlZ4xpzgp1coOp+C0tTTI4V45soO2V2fG1xXIBqGteYv/oBDDZfQ6kj3z" >> /home/vagrant/.ssh/authorized_keys		
+		    mkdir /root/.ssh/
+		    echo "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDQulD+SK4ggadzuJZdksaB7VVAXzDbeYHkd41savMnzxLiVXW4SFUXlBx4c1B8J4thzlgH/dXiDKgyPsjPPiHJaao446jJrJxBT/VATUg+MEYY48qUifCg9cTffAis512MhyvCGInfU2B/FMCz8zF9P0sDp+NoHWOCamawJ+B2Sk3r9VgtS30l34WTDBINbcqtlEq1IKTWHHLuDw84bRLHBF4x8bn6REYjb+UF98zHlhV539iikHjZSqQa1KHnp+1Ew9IY1WoUDukjwuAa6YGkWjO1ughAlZ4xpzgp1coOp+C0tTTI4V45soO2V2fG1xXIBqGteYv/oBDDZfQ6kj3z" >> /root/.ssh/authorized_keys
+			yum install traceroute-2.0.22-2.el7.x86_64 -y
+			yum install libselinux-python -y
+            yum install ansible vim -y
+            cp /vagrant/id_rsa /home/vagrant/.ssh/
+		    cp /vagrant/id_rsa /root/.ssh/
+		    chmod 0600 /root/.ssh/id_rsa
+            chown vagrant:vagrant /home/vagrant/.ssh/id_rsa 
+            chmod 0600 /home/vagrant/.ssh/id_rsa            
+			sysctl net.ipv4.conf.all.forwarding=1
+			echo "net.ipv4.ip_forward = 1" >> /etc/sysctl.conf
+			#echo 1 > /proc/sys/net/ipv4/ip_forward
+			echo "192.168.30.1  Router3" >> /etc/hosts
+			echo "192.168.30.2  Router2" >> /etc/hosts
+			echo "192.168.20.1  Router1" >> /etc/hosts
+			# Create project structure
+            mkdir ~/ansible
+		    mkdir -p /etc/ansible/roles/
+		    mkdir -p /home/vagrant/.ansible/roles/
+		    mkdir -p /root/.ansible/roles/
+			# rm -rf /root/.ansible/roles/ && rm -rf /home/vagrant/.ansible/roles/ && rm -rf /etc/ansible/roles/
+		    cp -r /vagrant/ansible/roles /etc/ansible/roles && cp -r /vagrant/ansible/roles /home/vagrant/.ansible/ && cp -r /vagrant/ansible/roles /root/.ansible/ 
+			cp /vagrant/ansible/playbook.yml /home/vagrant/playbook.yml 
+			cp /vagrant/ansible/inventory.yml /home/vagrant/.ansible/inventory.yml
+		    export ANSIBLE_HOST_KEY_CHECKING=false
+		    #ssh-keyscan -H TestServer1 >> ~/.ssh/known_hosts
+		    # ansible-playbook /home/vagrant/playbook.yml  -i /home/vagrant/.ansible/inventory.yml
+            SHELL
+
+			
+
+			
+
+		
+			
+        end
+
+      end
+
+  end
+  
+  
+end
+
