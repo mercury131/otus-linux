@@ -6,30 +6,31 @@
     - name: Install quagga
       yum: pkg=quagga state=latest
 
-    - name: Copy daemons config
-      template: src=daemons dest=/etc/quagga/daemons
+    - name: Copy interface config
+      template: src=Quagga.conf dest=/etc/quagga/Quagga.conf
 
     - name: Copy zebra config
       template: src=zebra.conf dest=/etc/quagga/zebra.conf
 
     - name: Copy ospf config
       template: src=ospfd.conf dest=/etc/quagga/ospfd.conf
-      
-    - name: start firewalld
-      command: systemctl start firewalld
 
+
+    - name: chown ospfd conf
+      command: chown quagga:quaggavt /etc/quagga/ospfd.conf
+
+    - name: chown zebra conf
+      command: chown quagga:quaggavt /etc/quagga/zebra.conf
+      
     - name: add firewall ospf rule
-      command: firewall-cmd --permanent --add-protocol=ospf
+      command: firewall-cmd --permanent --zone=trusted --add-protocol=ospf
       
     - name: reload firewall
       command: firewall-cmd --reload
 
           
-    - name: chown quagga configs
-      command: chown -R quagga:quaggavt /etc/quagga/
+    - name: chown quagga conf
+      command: chown quagga:quaggavt /etc/quagga/Quagga.conf
       notify:
           - zebra restart         
           - ospfd restart
-          - network restart
-          
-          

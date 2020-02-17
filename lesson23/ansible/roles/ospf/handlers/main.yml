@@ -4,3 +4,6 @@
       
     - name: ospfd restart
       service: name=ospfd state=restarted
+      
+    - name: network restart
+      service: name=network state=restarted

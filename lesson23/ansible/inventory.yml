@@ -1,9 +1,14 @@
 [routers]
-Router1 intname1='enp0s8' intnet1='192.168.40.1/24' intospfcost1='10' intname2='enp0s9' intnet2='192.168.20.1/24' intospfcost2='10' routerid='192.168.40.1' ospfnet1='192.168.40.0/24' ospfnet2='192.168.20.0/24' neighbor1='192.168.40.2' neighbor2='192.168.20.2'
-Router2 intname1='enp0s8' intnet1='192.168.40.2/24' intospfcost1='10' intname2='enp0s9' intnet2='192.168.30.2/24' intospfcost2='10' routerid='192.168.40.2' ospfnet1='192.168.10.0/24' ospfnet2='192.168.30.0/24' neighbor1='192.168.40.1' neighbor2='192.168.30.1'
-Router3 intname1='enp0s8' intnet1='192.168.20.2/24' intospfcost1='10' intname2='enp0s9' intnet2='192.168.30.1/24' intospfcost2='10' routerid='192.168.20.2' ospfnet1='192.168.20.0/24' ospfnet2='192.168.30.0/24' neighbor1='192.168.20.1' neighbor2='192.168.30.2'
+Router1 intname1='enp0s8' intnet1='192.168.40.1/24' intospfcost1='10' intname2='enp0s9' intnet2='192.168.20.1/24' intospfcost2='10' routerid='192.168.40.1' ospfnet1='192.168.40.0/24' ospfnet2='192.168.20.0/24' neighbor1='192.168.30.2' neighbor2='192.168.20.2' 
+Router2 intname1='enp0s8' intnet1='192.168.40.2/24' intospfcost1='10' intname2='enp0s9' intnet2='192.168.30.2/24' intospfcost2='10' routerid='192.168.30.2' ospfnet1='192.168.40.0/24' ospfnet2='192.168.30.0/24' neighbor1='192.168.40.1' neighbor2='192.168.20.2'
+Router3 intname1='enp0s8' intnet1='192.168.20.2/24' intospfcost1='10' intname2='enp0s9' intnet2='192.168.30.1/24' intospfcost2='10' routerid='192.168.20.2' ospfnet1='192.168.20.0/24' ospfnet2='192.168.30.0/24' neighbor1='192.168.20.1' neighbor2='192.168.40.2'
 
-[routers-async]
-Router1 intname1='enp0s8' intnet1='192.168.40.1/24' intospfcost1='10' intname2='enp0s9' intnet2='192.168.20.1/24' intospfcost2='10' routerid='192.168.40.1' ospfnet1='192.168.40.0/24' ospfnet2='192.168.20.0/24'
-Router2 intname1='enp0s8' intnet1='192.168.40.2/24' intospfcost1='10' intname2='enp0s9' intnet2='192.168.30.2/24' intospfcost2='10' routerid='192.168.40.2' ospfnet1='192.168.10.0/24' ospfnet2='192.168.30.0/24'
-Router3 intname1='enp0s8' intnet1='192.168.20.2/24' intospfcost1='10' intname2='enp0s9' intnet2='192.168.30.1/24' intospfcost2='10' routerid='192.168.20.2' ospfnet1='192.168.20.0/24' ospfnet2='192.168.30.0/24'
+[async]
+Router1 intname1='enp0s8' intnet1='192.168.40.1/24' intospfcost1='10' intname2='enp0s9' intnet2='192.168.20.1/24' intospfcost2='10' routerid='192.168.40.1' ospfnet1='192.168.40.0/24' ospfnet2='192.168.20.0/24' neighbor1='192.168.30.2' neighbor2='192.168.20.2' 
+Router2 intname1='enp0s8' intnet1='192.168.40.2/24' intospfcost1='10' intname2='enp0s9' intnet2='192.168.30.2/24' intospfcost2='50' routerid='192.168.30.2' ospfnet1='192.168.40.0/24' ospfnet2='192.168.30.0/24' neighbor1='192.168.40.1' neighbor2='192.168.20.2'
+Router3 intname1='enp0s8' intnet1='192.168.20.2/24' intospfcost1='10' intname2='enp0s9' intnet2='192.168.30.1/24' intospfcost2='10' routerid='192.168.20.2' ospfnet1='192.168.20.0/24' ospfnet2='192.168.30.0/24' neighbor1='192.168.20.1' neighbor2='192.168.40.2'
+
+[test]
+Router1 intname1='enp0s8' intnet1='192.168.40.1/24' intospfcost1='10' intname2='enp0s9' intnet2='192.168.20.1/24' intospfcost2='10' routerid='192.168.40.1' ospfnet1='192.168.40.0/24' ospfnet2='192.168.20.0/24' neighbor1='192.168.40.2' neighbor2='192.168.20.2' 
+Router2 intname1='enp0s8' intnet1='192.168.40.2/24' intospfcost1='10' intname2='enp0s9' intnet2='192.168.30.2/24' intospfcost2='10' routerid='192.168.30.2' ospfnet1='192.168.40.0/24' ospfnet2='192.168.30.0/24' neighbor1='192.168.40.1' neighbor2='192.168.30.1'
+Router3 intname1='enp0s8' intnet1='192.168.20.2/24' intospfcost1='10' intname2='enp0s9' intnet2='192.168.30.1/24' intospfcost2='10' routerid='192.168.20.2' ospfnet1='192.168.20.0/24' ospfnet2='192.168.30.0/24' neighbor1='192.168.20.1' neighbor2='192.168.30.2'

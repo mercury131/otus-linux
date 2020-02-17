@@ -68,12 +68,15 @@ Vagrant.configure("2") do |config|
 			sysctl net.ipv4.conf.all.forwarding=1
 			echo "net.ipv4.ip_forward = 1" >> /etc/sysctl.conf
 			setenforce 0
-			yum install -y quagga
-			cp -rf /vagrant/configs/r1/quagga/* /etc/quagga/
-			chown -R quagga:quaggavt /etc/quagga
-			systemctl start zebra.service
-			systemctl start ospfd.service
-			systemctl restart network
+			#yum install -y quagga
+			#mv /etc/quagga/Quagga.conf /etc/quagga/Quagga.conf.bak
+			#mv /etc/quagga/zebra.conf /etc/quagga/zebra.conf.bak
+			#cp -f /vagrant/configs/r1/quagga/Quagga.conf /etc/quagga/Quagga.conf
+			#cp -f /vagrant/configs/r1/quagga/zebra.conf /etc/quagga/zebra.conf
+			#chown -R quagga:quaggavt /etc/quagga
+			#systemctl start zebra.service
+			#systemctl start ospfd.service
+			#systemctl restart network
             SHELL
 			
         when "Router2"
@@ -89,15 +92,18 @@ Vagrant.configure("2") do |config|
 			sysctl net.ipv4.conf.all.forwarding=1
 			echo "net.ipv4.ip_forward = 1" >> /etc/sysctl.conf
 			setenforce 0
-			yum install -y quagga
-			cp -rf /vagrant/configs/r2/quagga/* /etc/quagga/
-			chown -R quagga:quaggavt /etc/quagga
-			systemctl start zebra.service
-			systemctl start ospfd.service
-			systemctl restart network
-			sleep 20
-			ip r
-			traceroute 192.168.20.1
+			#yum install -y quagga
+			#mv /etc/quagga/Quagga.conf /etc/quagga/Quagga.conf.bak
+			#mv /etc/quagga/zebra.conf /etc/quagga/zebra.conf.bak
+			#cp -f /vagrant/configs/r1/quagga/Quagga.conf /etc/quagga/Quagga.conf
+			#cp -f /vagrant/configs/r1/quagga/zebra.conf /etc/quagga/zebra.conf
+			#chown -R quagga:quaggavt /etc/quagga
+			#systemctl start zebra.service
+			#systemctl start ospfd.service
+			#systemctl restart network
+			#sleep 20
+			#ip r
+			#traceroute 192.168.20.1
 
             SHELL
 
