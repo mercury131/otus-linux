@@ -1,7 +1,0 @@
----
- - hosts: async
-   become: true
-   tasks:
-   - include_role:
-        name: ospf
-

@@ -5,12 +5,13 @@
 - **Vagrant** - ПО для конфигурирования/шаблонизирования виртуальных машин
 - **Git** - система контроля версий
 - **Linux net tools** - сетевые утилиты Linux
+- **quagga** - Программный маршрутизатор
 
 
 
 Используемые репозитории:
 - **https://github.com/mercury131/otus-linux** - репозиторий для выполнения домашних заданий OTUS
-- **https://github.com/mercury131/otus-linux/tree/master/lesson20** - ссылка на данное домашнее задание
+- **https://github.com/mercury131/otus-linux/tree/master/lesson23** - ссылка на данное домашнее задание
 
 
  
@@ -18,31 +19,25 @@
 
 В рамках данного домашнего задания выполнено:
 
-в Office1 в тестовой подсети появляется сервера с доп интерфесами и адресами
-в internal сети testLAN
-- testClient1 - 10.10.10.254
-- testClient2 - 10.10.10.254
-- testServer1- 10.10.10.1
-- testServer2- 10.10.10.1
+OSPF
+- Поднять три виртуалки
+- Объединить их разными private network
+1. Поднять OSPF между машинами средствами программных маршрутизаторов на выбор: Quagga, FRR или BIRD
+2. Изобразить ассиметричный роутинг
+3. Сделать один из линков "дорогим", но что бы при этом роутинг был симметричным
 
-равести вланами
-testClient1 <-> testServer1
-testClient2 <-> testServer2
-
-между centralRouter и inetRouter
-"пробросить" 2 линка (общая inernal сеть) и объединить их в бонд
-проверить работу c отключением интерфейсов
-
-для сдачи - вагрант файл с требуемой конфигурацией
-Разворачиваться конфигурация должна через ансибл
+Формат сдачи:
+Vagrantfile + ansible 
 
 
 
 
 Используемые файлы и директории:
-- В директории lesson20 расположен Vagrantfile с образом Centos 6/7 и автоматическими шагами развертывания
+- В директории lesson23 расположен Vagrantfile с образом Centos 7 и автоматическими шагами развертывания
 
+В Vagrantfile реализована следующая сетевая схема:
 
+![network diagram](https://raw.githubusercontent.com/mercury131/otus-linux/master/lesson23/ospf.png)
 
 # Как проверить домашнее задание?
 
@@ -61,140 +56,197 @@ vagrant plugin install vagrant-reload
 Для запуска Vagrantfile автоматизированными шагами выполните:
 
 ```
-cd otus-linux/lesson20
+cd otus-linux/lesson23
 vagrant up 
 ```
 
-Далее зайдите на машину office1Router и выполните ansible playbook-и:
+Далее зайдите на машину Router3 и выполните ansible playbook-и:
 
 ```
-vagrant ssh office1Router
+vagrant ssh Router3
 sudo -i
-ansible-playbook /home/vagrant/vlan-playbook.yml  -i /home/vagrant/.ansible/inventory.yml
-ansible-playbook /home/vagrant/bond-playbook.yml  -i /home/vagrant/.ansible/inventory.yml
+ansible-playbook /home/vagrant/playbook.yml  -i /home/vagrant/.ansible/inventory.yml
 
 ```
 
-Данные playbook-и создадум Vlan-ы и построят bond между серверами centralRouter и inetRouter
-
-Проверить можно подключившись к centralRouter и выполнив ping:
+Данный playbook настроит OSPF между роутерами, проверить что все работает можно посмотрев маршруты:
 
 ```
-vagrant ssh centralRouter
-
-[root@centralRouter ~]# ping 10.10.11.2
-PING 10.10.11.2 (10.10.11.2) 56(84) bytes of data.
-64 bytes from 10.10.11.2: icmp_seq=1 ttl=64 time=1.41 ms
-64 bytes from 10.10.11.2: icmp_seq=2 ttl=64 time=0.294 ms
-64 bytes from 10.10.11.2: icmp_seq=3 ttl=64 time=0.284 ms
-64 bytes from 10.10.11.2: icmp_seq=4 ttl=64 time=0.617 ms
-64 bytes from 10.10.11.2: icmp_seq=5 ttl=64 time=0.300 ms
-^C
---- 10.10.11.2 ping statistics ---
-5 packets transmitted, 5 received, 0% packet loss, time 4003ms
-rtt min/avg/max/mdev = 0.284/0.581/1.413/0.435 ms
-
+[root@Router3 ~]# ip r
+default via 10.0.2.2 dev enp0s3 proto dhcp metric 100
+10.0.2.0/24 dev enp0s3 proto kernel scope link src 10.0.2.15 metric 100
+192.168.20.0/24 dev enp0s8 proto kernel scope link src 192.168.20.2 metric 101
+192.168.30.0/24 dev enp0s9 proto kernel scope link src 192.168.30.1 metric 102
+192.168.40.0/24 via 192.168.20.1 dev enp0s8 proto zebra metric 20
 ```
 
-Проверить vlan можно подключившись к TestServer1 и выполнив ping:
+И соседей роутера:
 
 ```
-vagrant ssh TestServer1
+[root@Router3 ~]# vtysh
+
+Hello, this is Quagga (version 0.99.22.4).
+Copyright 1996-2005 Kunihiro Ishiguro, et al.
 
 
-[root@TestServer1 ~]# ping 10.10.10.254
-PING 10.10.10.254 (10.10.10.254) 56(84) bytes of data.
-64 bytes from 10.10.10.254: icmp_seq=1 ttl=64 time=1.17 ms
-64 bytes from 10.10.10.254: icmp_seq=2 ttl=64 time=0.296 ms
-64 bytes from 10.10.10.254: icmp_seq=3 ttl=64 time=0.305 ms
-64 bytes from 10.10.10.254: icmp_seq=4 ttl=64 time=0.293 ms
-64 bytes from 10.10.10.254: icmp_seq=5 ttl=64 time=0.296 ms
-^C
---- 10.10.10.254 ping statistics ---
-5 packets transmitted, 5 received, 0% packet loss, time 4003ms
-rtt min/avg/max/mdev = 0.293/0.472/1.171/0.349 ms
+Router3# show ip ospf n
 
-```
+    Neighbor ID Pri State           Dead Time Address         Interface            RXmtL RqstL DBsmL
+192.168.40.1      1 Full/DROther       7.549s 192.168.20.1    enp0s8:192.168.20.2      0     0     0
+192.168.30.2      1 Full/DROther       7.413s 192.168.30.2    enp0s9:192.168.30.1      0     0     0
 
-Тоже самое делаем по аналогии с TestServer2
+Router3# show ip ospf r
+============ OSPF network routing table ============
+N    192.168.20.0/24       [10] area: 0.0.0.0
+                           directly attached to enp0s8
+N    192.168.30.0/24       [100] area: 0.0.0.0
+                           directly attached to enp0s9
+N    192.168.40.0/24       [20] area: 0.0.0.0
+                           via 192.168.20.1, enp0s8
 
-Выводы playbook:
+============ OSPF router routing table =============
 
-```
-[root@office1Router ~]# ansible-playbook /home/vagrant/bond-playbook.yml  -i /home/vagrant/.ansible/inventory.yml
-
-PLAY [serversbond] ************************************************************************************************************************************************************************************************************************************************************
-
-TASK [Gathering Facts] ********************************************************************************************************************************************************************************************************************************************************
-
-ok: [inetRouter]
-
-ok: [centralRouter]
-
-TASK [include_role : bonds] ***************************************************************************************************************************************************************************************************************************************************
-
-TASK [bonds : Copy interface config 1] ****************************************************************************************************************************************************************************************************************************************
-changed: [centralRouter]
-changed: [inetRouter]
-
-TASK [bonds : Copy interface config 2] ****************************************************************************************************************************************************************************************************************************************
-changed: [centralRouter]
-changed: [inetRouter]
-
-TASK [bonds : Copy interface config 1] ****************************************************************************************************************************************************************************************************************************************
-changed: [centralRouter]
-changed: [inetRouter]
-
-TASK [bonds : Copy BOND interface config] *************************************************************************************************************************************************************************************************************************************
-changed: [centralRouter]
-changed: [inetRouter]
-
-RUNNING HANDLER [bonds : network restart] *************************************************************************************************************************************************************************************************************************************
-changed: [centralRouter]
-changed: [inetRouter]
-
-PLAY RECAP ********************************************************************************************************************************************************************************************************************************************************************
-centralRouter              : ok=6    changed=5    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
-inetRouter                 : ok=6    changed=5    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
+============ OSPF external routing table ===========
 
 ```
 
-```
-[root@office1Router ~]# ansible-playbook /home/vagrant/vlan-playbook.yml  -i /home/vagrant/.ansible/inventory.yml
-
-PLAY [servers] ****************************************************************************************************************************************************************************************************************************************************************
-
-TASK [Gathering Facts] ********************************************************************************************************************************************************************************************************************************************************
-ok: [TestServer1]
-ok: [TestClient1]
-ok: [TestServer2]
-ok: [TestClient2]
-
-TASK [include_role : vlans] ***************************************************************************************************************************************************************************************************************************************************
-
-TASK [vlans : Copy interface config] ******************************************************************************************************************************************************************************************************************************************
-changed: [TestServer2]
-changed: [TestClient1]
-changed: [TestClient2]
-changed: [TestServer1]
-
-TASK [vlans : Copy VLAN interface config] *************************************************************************************************************************************************************************************************************************************
-changed: [TestServer1]
-changed: [TestClient1]
-changed: [TestServer2]
-changed: [TestClient2]
-
-RUNNING HANDLER [vlans : network restart] *************************************************************************************************************************************************************************************************************************************
-changed: [TestServer1]
-changed: [TestClient1]
-changed: [TestServer2]
-changed: [TestClient2]
-
-PLAY RECAP ********************************************************************************************************************************************************************************************************************************************************************
-TestClient1                : ok=4    changed=3    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
-TestClient2                : ok=4    changed=3    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
-TestServer1                : ok=4    changed=3    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
-TestServer2                : ok=4    changed=3    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0
+Для включения ассиметричного роутинга выполните следующий playbook:
 
 ```
+ansible-playbook /home/vagrant/playbook.yml  -i /home/vagrant/.ansible/inventory2.yml
+```
 
+Чтобы сделать 1 линк дорогим, но оставить роутинг симметричным, выполните следующий playbook:
+
+```
+ansible-playbook /home/vagrant/playbook.yml  -i /home/vagrant/.ansible/inventory3.yml
+```
+
+Настройка OSPF вручную:
+
+Устанавливаем quagga:
+
+```
+yum install -y quagga
+```
+
+Включаем форвардинг пакетов:
+
+```
+echo "net.ipv4.ip_forward = 1" >> /etc/sysctl.conf
+sysctl -p /etc/sysctl.conf
+```
+
+Переходим к настройке quagga:
+
+Стартуем сервис и включаем его:
+
+```
+systemctl enable zebra.service 
+systemctl start zebra.service
+```
+
+Настраиваем LAN интервейсы в консоли vtysh:
+
+```
+vtysh 
+my-gw# configure terminal
+my-gw(config)# log file /var/log/quagga/quagga.log
+my-gw(config)# do show  interface
+Interface enp0s8 is up, line protocol detection is disabled
+  index 2 metric 1 mtu 1500
+  flags: <UP,BROADCAST,RUNNING,MULTICAST>
+  HWaddr: 02:02:0a:ab:00:f4
+  inet 192.168.40.1/24 broadcast 10.0.11.255
+Interface enp0s9 is up, line protocol detection is disabled
+  index 3 metric 1 mtu 1500
+  flags: <UP,BROADCAST,RUNNING,MULTICAST>
+  HWaddr: 02:02:c0:a8:02:7a
+  inet 192.168.20.1/24 broadcast 192.168.3.255
+Interface lo is up, line protocol detection is disabled
+  index 1 metric 1 mtu 65536
+  flags: <UP,LOOPBACK,RUNNING>
+  inet 127.0.0.1/8
+my-gw(config)# interface enp0s8
+my-gw(config-if)# description LAN
+my-gw(config-if)# ip  address  192.168.40.1/24
+my-gw(config-if)# no shutdown
+my-gw(config-if)# exit
+my-gw(config)# interface enp0s9
+my-gw(config-if)# description LAN
+my-gw(config-if)# ip address 192.168.20.1/24
+my-gw(config-if)# exit
+my-gw(config)# do write
+my-gw(config)# exit
+my-gw# exit
+```
+
+Переходим к настройке OSPF:
+
+Копируем семпл с конфигом:
+
+```
+cp /usr/share/doc/quagga-0.99.22.4/ospfd.conf.sample /etc/quagga/ospfd.conf
+```
+
+Меняем владельца:
+
+```
+chown quagga:quaggavt /etc/quagga/ospfd.conf
+```
+
+Включаем сервис и стартуем его:
+
+```
+systemctl enable ospfd.service 
+systemctl start ospfd.service
+```
+
+Переходим в консоль vtysh и настраиваем OSPF:
+
+```
+vtysh 
+my-gw# configure terminal
+my-gw# service integrated-vtysh-config
+my-gw(config)# router ospf
+my-gw(config-router)# network  192.168.20.0/24 area 0.0.0.0
+my-gw(config-router)# network  192.168.40.0/24 area 0.0.0.0
+my-gw(config-router)# router-id  192.168.40.1
+my-gw(config-if)# exit
+my-gw(config)# do write
+my-gw(config)# exit
+```
+
+По аналогии настраиваем соседние роутеры. 
+
+Проверяем соседей:
+
+```
+[root@Router2 ~]# vtysh
+
+Hello, this is Quagga (version 0.99.22.4).
+Copyright 1996-2005 Kunihiro Ishiguro, et al.
+
+Router2# show ip ospf n
+
+    Neighbor ID Pri State           Dead Time Address         Interface            RXmtL RqstL DBsmL
+192.168.40.1      1 Full/DROther       6.669s 192.168.40.1    enp0s8:192.168.40.2      0     0     0
+192.168.20.2      1 Full/DROther       7.626s 192.168.30.1    enp0s9:192.168.30.2      0     0     0
+Router2# show ip ospf r
+============ OSPF network routing table ============
+N    192.168.20.0/24       [60] area: 0.0.0.0
+                           via 192.168.40.1, enp0s8
+N    192.168.30.0/24       [100] area: 0.0.0.0
+                           directly attached to enp0s9
+N    192.168.40.0/24       [50] area: 0.0.0.0
+                           directly attached to enp0s8
+
+============ OSPF router routing table =============
+
+============ OSPF external routing table ===========
+
+```
+
+Для изменения стоимости маршрутов меняются параметры ip ospf cost в конфиге ospfd
+
+Чтобы работала динамическая маршрутизаторация от точки к точке необходимо для сетевых интерфейсов добавлять параметр ip ospf network point-to-point

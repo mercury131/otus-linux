@@ -1,7 +1,0 @@
----
- - hosts: routers
-   become: true
-   tasks:
-   - include_role:
-        name: ospf
-

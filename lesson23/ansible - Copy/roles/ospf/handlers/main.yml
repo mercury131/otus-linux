@@ -1,6 +1,0 @@
----
-    - name: zebra restart
-      service: name=zebra state=restarted
-      
-    - name: ospfd restart
-      service: name=ospfd state=restarted
