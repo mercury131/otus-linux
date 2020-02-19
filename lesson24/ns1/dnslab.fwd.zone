@@ -1,0 +1,28 @@
+$TTL 86400
+@       IN SOA  ns1.dns.lab.     root.dns.lab. (
+                                  2014090401    ; serial
+                                        3600    ; refresh
+                                        1800    ; retry
+                                      604800    ; expire
+                                       86400 )  ; minimum
+
+; Name server's
+
+@       IN      NS      ns1.dns.lab.
+@       IN      NS      ns2.dns.lab.
+
+; Name server hostname to IP resolve.
+
+@       IN      A       192.168.40.1
+@       IN      A       192.168.40.2
+
+; Hosts in this Domain
+
+@       IN      A       192.168.40.3
+@       IN      A       192.168.40.4
+ns1     IN      A       192.168.40.1
+ns2     IN      A       192.168.40.2
+client1 IN      A       192.168.40.3
+client2 IN      A       192.168.40.4
+web1	IN	CNAME	client1
+web2    IN      CNAME   client2

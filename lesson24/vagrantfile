@@ -1,0 +1,129 @@
+# -*- mode: ruby -*-
+# vim: set ft=ruby :
+# -*- mode: ruby -*-
+# vim: set ft=ruby :
+
+MACHINES = {
+:ns1 => {
+        :box_name => "cdaf/CentOSLVM",
+        #:public => {:ip => '10.10.10.1', :adapter => 1},
+        :net => [
+                   {ip: '192.168.40.1', adapter: 2, netmask: "255.255.255.0", virtualbox__intnet: "dns-net1"},
+                ]
+  },
+  :ns2 => {
+        :box_name => "cdaf/CentOSLVM",
+        :net => [
+                   {ip: '192.168.40.2', adapter: 2, netmask: "255.255.255.0", virtualbox__intnet: "dns-net1"},
+
+                ]
+  },
+  
+  :client1 => {
+        :box_name => "cdaf/CentOSLVM",
+        :net => [
+                   {ip: '192.168.40.3', adapter: 2, netmask: "255.255.255.0", virtualbox__intnet: "dns-net1"},
+                ]
+  },
+  
+  :client2 => {
+        :box_name => "cdaf/CentOSLVM",
+        :net => [
+                   {ip: '192.168.40.4', adapter: 2, netmask: "255.255.255.0", virtualbox__intnet: "dns-net1"},
+                ]
+  },
+
+  
+}
+
+Vagrant.configure("2") do |config|
+
+  MACHINES.each do |boxname, boxconfig|
+
+    config.vm.define boxname do |box|
+
+        box.vm.box = boxconfig[:box_name]
+        box.vm.host_name = boxname.to_s
+
+        boxconfig[:net].each do |ipconf|
+          box.vm.network "private_network", ipconf
+        end
+        
+        if boxconfig.key?(:public)
+          box.vm.network "public_network", boxconfig[:public]
+        end
+
+      box.vm.provision "shell", inline: <<-SHELL
+          mkdir -p ~root/.ssh
+          cp ~vagrant/.ssh/auth* ~root/.ssh
+      SHELL
+        
+      case boxname.to_s
+      when "ns1"
+        box.vm.provision "shell", run: "always", inline: <<-SHELL
+		  sudo systemctl stop firewalld
+		  yum install epel-release  -y
+		  yum install bind* -y
+		  #setenforce 0
+		  semanage fcontext -a -t named_conf_t /etc/named.conf
+		  semanage fcontext -a -t named_conf_t /etc/named.rfc1912.zones
+		  mv /etc/named.conf /etc/named.conf.bak
+		  cp /vagrant/ns1/named.conf /etc/named.conf
+		  cp /vagrant/ns1/dnslab.fwd.zone /var/named/dnslab.fwd.zone
+		  cp /vagrant/ns1/dnslab.fwd.zone.fix /var/named/dnslab.fwd.zone.fix
+		  cp /vagrant/ns1/dnslab.rev.zone /var/named/dnslab.rev.zone
+		  cp /vagrant/ns1/newdnslab.fwd.zone /var/named/newdnslab.fwd.zone
+		  chgrp named /etc/named.conf
+		  chgrp named /var/named/dnslab.fwd.zone
+		  chgrp named /var/named/dnslab.fwd.zone.fix
+		  chgrp named /var/named/dnslab.rev.zone
+		  chgrp named /var/named/newdnslab.fwd.zone
+		  systemctl start named
+		  systemctl status named
+        SHELL
+
+      when "ns2"
+        box.vm.provision "shell", run: "always", inline: <<-SHELL
+		  sudo systemctl stop firewalld
+		  sudo systemctl stop firewalld
+		  yum install epel-release  -y
+		  yum install bind* -y
+		  #setenforce 0
+		  semanage fcontext -a -t named_conf_t /etc/named.conf
+		  semanage fcontext -a -t named_conf_t /etc/named.rfc1912.zones
+		  cp /vagrant/ns2/named.conf /etc/named.conf
+		  chgrp named /etc/named.conf
+		  systemctl start named
+		  systemctl status named
+        SHELL
+		
+      when "client1"
+        box.vm.provision "shell", run: "always", inline: <<-SHELL
+		  sudo systemctl stop firewalld
+		  yum install epel-release  -y
+		  yum install bind-utils -y
+		  echo "search dns.lab" > /etc/resolv.conf
+		  echo "nameserver 192.168.40.1" >> /etc/resolv.conf
+		  echo "nameserver 192.168.40.2" >> /etc/resolv.conf
+        SHELL
+		
+      when "client2"
+        box.vm.provision "shell", run: "always", inline: <<-SHELL
+		  sudo systemctl stop firewalld
+		  yum install epel-release  -y
+		  yum install bind-utils -y
+		  echo "search dns.lab" > /etc/resolv.conf
+		  echo "nameserver 192.168.40.1" >> /etc/resolv.conf
+		  echo "nameserver 192.168.40.2" >> /etc/resolv.conf
+        SHELL
+		
+			
+        end
+
+      end
+
+  end
+  
+  
+end
+

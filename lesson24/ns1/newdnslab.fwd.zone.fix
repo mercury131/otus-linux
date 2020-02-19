@@ -1,0 +1,18 @@
+$TTL 86400
+@       IN SOA  ns1.newdns.lab.     root.newdns.lab. (
+                                  2014090401    ; serial
+                                        3600    ; refresh
+                                        1800    ; retry
+                                      604800    ; expire
+                                       86400 )  ; minimum
+
+; Name server's
+
+
+; Name server hostname to IP resolve.
+
+
+
+; Hosts in this Domain
+
+
