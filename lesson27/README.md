@@ -65,7 +65,7 @@ http://192.168.11.101/
 
 ![DDOS Cookie Protection](https://raw.githubusercontent.com/mercury131/otus-linux/master/lesson27/cookie.PNG)
 
-Для проверка задания с js выполните:
+Для проверки задания с js выполните:
 
 ```
 vagrant ssh
@@ -134,3 +134,9 @@ docker run -d -p 80:80 mercury131/antiddos-nginx:advanced
 Проверяем в браузере что все работает:
 
 ![DDOS Cookie + js + meta Protection](https://raw.githubusercontent.com/mercury131/otus-linux/master/lesson27/cookie_js.PNG)
+
+Логика работы задания с JS
+
+При переходе на http://192.168.11.101/ проверяется cookie access, если ее нет происходит редирект на http://192.168.11.101/js
+Даже если cookie access есть, на странице http://192.168.11.101/ делается javascript проверка на другие cookie, и если их нет клиент будет перенаправлен на http://192.168.11.101/js
+На странице http://192.168.11.101/js делается meta редирект на страницу http://192.168.11.101/check где с помощью javascript выставляются cookie и проверяются, если cookie есть, делается редирект на http://192.168.11.101/ , где откроется главная страница, т.к. все проверки пройдены успешно.
