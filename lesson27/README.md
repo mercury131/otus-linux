@@ -11,7 +11,7 @@
 Используемые репозитории:
 - **https://github.com/mercury131/otus-linux** - репозиторий для выполнения домашних заданий OTUS
 - **https://github.com/mercury131/otus-linux/tree/master/lesson27** - ссылка на данное домашнее задание
-- **https://gitlab.com/otus_linux/nginx-antiddos-example** - исходные репозиторий с заданием
+- **https://gitlab.com/otus_linux/nginx-antiddos-example** - исходный репозиторий с заданием
 
 
  
