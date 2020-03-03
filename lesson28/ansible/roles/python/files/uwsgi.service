@@ -1,0 +1,9 @@
+[Unit]
+    Description=uWSGI instance to serve myproject
+
+[Service]
+    ExecStart=/usr/bin/bash -c 'cd /var/www/python; uwsgi --ini myproject.ini'
+
+[Install]
+    WantedBy=multi-user.target
+

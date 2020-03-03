@@ -1,0 +1,49 @@
+---
+    - name: Add Nginx Repository
+      copy: src=nginx.repo dest=/etc/yum.repos.d/ owner=root group=root
+      register: nginx_repo
+      
+    - name: Install Nginx
+      yum: pkg=nginx state=latest
+      when: nginx_repo is succeeded
+      register: nginxinstalled
+      notify:
+          - nginx start
+          
+    - name: Enable Nginx Service
+      service:
+        name: nginx
+        enabled: yes
+      when: nginxinstalled is succeeded
+      register: nginxenabled
+
+    - name: install python-pip python-devel gcc
+      shell: yum install python-pip python-devel gcc -y
+      
+    - name: install uwsgi
+      shell: pip install uwsgi
+      
+    - name: create application directory
+      shell: mkdir -p /var/www/python && chown -R nginx:nginx /var/www/python && chmod -R 755 /var/www/python
+      
+    - name: Copy Application example
+      copy: src=wsgi.py dest=/var/www/python/wsgi.py owner=nginx group=nginx
+      
+    - name: Copy wsgi settings file
+      copy: src=myproject.ini dest=/var/www/python/myproject.ini owner=nginx group=nginx
+
+     
+    - name: Copy uwsgi service
+      copy: src=uwsgi.service dest=/etc/systemd/system/uwsgi.service owner=nginx group=nginx
+      notify:
+          - uwsgi start
+          
+    - name: reload systemd
+      shell: systemctl daemon-reload
+          
+    - name: Copy nginx config
+      copy: src=python.conf dest=/etc/nginx/conf.d/python.conf owner=nginx group=nginx
+      
+      
+    - name: restart nginx
+      shell: systemctl restart nginx

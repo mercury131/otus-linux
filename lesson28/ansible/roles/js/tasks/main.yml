@@ -1,0 +1,43 @@
+---
+    - name: Add Nginx Repository
+      copy: src=nginx.repo dest=/etc/yum.repos.d/ owner=root group=root
+      register: nginx_repo
+      
+    - name: Install Nginx
+      yum: pkg=nginx state=latest
+      when: nginx_repo is succeeded
+      register: nginxinstalled
+      notify:
+          - nginx start
+          
+    - name: Enable Nginx Service
+      service:
+        name: nginx
+        enabled: yes
+      when: nginxinstalled is succeeded
+      register: nginxenabled
+
+    - name: Cony NGINX cofig
+      when: nginxenabled is succeeded
+      copy: src=js.conf dest=/etc/nginx/conf.d/js.conf owner=nginx group=nginx
+
+    - name: add nodejs repo
+      shell: curl  -sL https://rpm.nodesource.com/setup_12.x | bash -
+      
+    - name: install nodejs
+      shell: yum  install  -y nodejs  gcc-c++ make
+      
+    - name: create React dir
+      shell: mkdir -p /var/www/js
+      
+    - name: create default React application
+      shell: npx create-react-app /var/www/js
+      
+    - name: build default React application
+      shell: cd /var/www/js && PUBLIC_URL=http://js.local && npm run build && cp -rf build/* public/
+      
+    - name: setup permissions on React application
+      shell: chmod -R 755 /var/www/js && chown -R nginx:nginx /var/www/js
+      
+    - name: reload nginx
+      shell: systemctl reload nginx
