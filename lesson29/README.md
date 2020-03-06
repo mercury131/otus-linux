@@ -167,6 +167,12 @@ create user 'repl_user'@'%' identified by 'PASS';
 Grant replication slave on *.* to 'repl_user'@'%';
 ```
 
+Чтобы репликация работала под Mysql 8-й версии, нужно выставить mysql_native_password, для созданного ранее пользователя.
+
+```
+ALTER USER 'repl_user'@'%' IDENTIFIED WITH mysql_native_password BY 'PASS';
+```
+
 Теперь выполняем бэкап всех БД, включая конфигурацию, чтобы перенести это на Slave сервер:
 
 ```
