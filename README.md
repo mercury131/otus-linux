@@ -11,7 +11,7 @@
 
 | URL   														|      Theme      																																																|
 |---------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| https://github.com/mercury131/otus-linux/tree/master/lesson1  | Версии LInux. Ядро Linux. Функции, виды и версии ядер 																																						|
+| https://github.com/mercury131/otus-linux/tree/master/lesson1  | Версии Linux. Ядро Linux. Функции, виды и версии ядер 																																						|
 | https://github.com/mercury131/otus-linux/tree/master/lesson2  | Дисковая подсистема (Задачи дисковой системы. Программный и аппаратный RAID. RAID 0/1/5/6/10/60. Получение информации о дисковой системе системе с помощью dmidecode, dmesg, smartctl.) 						|
 | https://github.com/mercury131/otus-linux/tree/master/lesson3  | LVM  облегчаем себе жизнь управления файловыми системами. архитектура файловой системы Linux: суперблок, блоки, inodes, журналы. разбираемся в многообразии файловых систем 									| 
 | https://github.com/mercury131/otus-linux/tree/master/lesson4  | Как происходит загрузка системы. В чем разница между BIOS/UEFI. Знакомимся GRUB2 и учимся его настраивать. Управляем initrd с помощью dracut. Знакомимся с udev. Учимся восстанавливать сломанный загрузчик 	|
@@ -30,3 +30,11 @@
 | https://github.com/mercury131/otus-linux/tree/master/lesson17 | Сбор и анализ логов.  																																														|
 | https://github.com/mercury131/otus-linux/tree/master/lesson18 | Архитектура сетей.  																																															|
 | https://github.com/mercury131/otus-linux/tree/master/lesson19 | LDAP. Централизованная авторизация и аутентификация.  																																						|
+| https://github.com/mercury131/otus-linux/tree/master/lesson20 | Сетевые пакеты. VLAN'ы. LACP
+| https://github.com/mercury131/otus-linux/tree/master/lesson21 | Фильтрация трафика
+| https://github.com/mercury131/otus-linux/tree/master/lesson22 | Мосты, туннели и VPN
+| https://github.com/mercury131/otus-linux/tree/master/lesson23 | Статическая и динамическая маршрутизация
+| https://github.com/mercury131/otus-linux/tree/master/lesson24 | DNS/DHCP - настройка и обслуживание
+| https://github.com/mercury131/otus-linux/tree/master/lesson27 | Web сервера
+| https://github.com/mercury131/otus-linux/tree/master/lesson28 | Динамический веб контент
+| https://github.com/mercury131/otus-linux/tree/master/lesson29 | Mysql
