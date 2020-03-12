@@ -38,3 +38,4 @@
 | https://github.com/mercury131/otus-linux/tree/master/lesson27 | Web сервера
 | https://github.com/mercury131/otus-linux/tree/master/lesson28 | Динамический веб контент
 | https://github.com/mercury131/otus-linux/tree/master/lesson29 | Mysql
+| https://github.com/mercury131/otus-linux/tree/master/lesson30 | Почтовые сервера. Postfix,Dovecot
