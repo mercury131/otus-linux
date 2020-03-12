@@ -64,7 +64,7 @@ Vagrant.configure("2") do |config|
 		  cp /vagrant/dovecot/dovecot.conf.work /etc/dovecot/dovecot.conf
 		  cp /vagrant/imap /etc/pam.d/imap
 		  cp -f /vagrant/dovecot-pam /etc/pam.d/dovecot
-		  cp /vagrant/.muttrc /root/.muttrc
+		  cp /vagrant/server.muttrc /root/.muttrc
   		  systemctl start postfix
 		  systemctl start dovecot
 		  echo "ehlo localhost" > /root/send
