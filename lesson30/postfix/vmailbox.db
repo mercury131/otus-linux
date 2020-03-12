@@ -1,0 +1,4 @@
+info@test.local       info/Maildir
+admin@test.local    admin/Maildir
+# Comment out the entry below to implement a catch-all.
+# @example.com  catchall/Maildir ...virtual mailboxes for more domains...

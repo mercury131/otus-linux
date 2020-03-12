@@ -1,0 +1,32 @@
+mail_location = maildir:~/Maildir
+
+protocols = imap
+
+
+
+auth_mechanisms = plain login
+auth_debug=yes
+auth_debug_passwords=yes
+
+disable_plaintext_auth = no
+ssl=yes
+
+
+
+auth default {
+    mechanisms = plain login
+    passdb pam {
+        args = "*"
+    }
+    userdb passwd {
+    }
+    user = root
+    socket listen {
+      client {
+        path = /var/spool/postfix/private/auth
+        mode = 0660
+        user = postfix
+        group = postfix
+      }
+    }
+}

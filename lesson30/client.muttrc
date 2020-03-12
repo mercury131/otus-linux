@@ -1,0 +1,13 @@
+
+
+set from = "postfixtester@test.local"
+set realname = "postfixtester"
+
+set smtp_url = "smtp://192.168.11.102:25/"
+
+set ssl_starttls=no
+set ssl_force_tls=no
+
+set spoolfile=imap://postfixtester:RooTqwerty123@192.168.11.102/
+set folder=imap://postfixtester123:RooTqwerty123@192.168.11.102/
+
