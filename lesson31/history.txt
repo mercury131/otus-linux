@@ -1,0 +1,247 @@
+    1  docker swarm init --advertise-addr 192.168.11.101 > /vagrant/swarm.txt
+    2  cat /vagrant/swarm.txt 
+    3  cat /vagrant/swarm.txt | grep join
+    4  cat /vagrant/swarm.txt | grep "token"
+    5  cat /vagrant/swarm.txt | grep "--token"
+    6  cat /vagrant/swarm.txt | grep '--token'
+    7  cat /vagrant/swarm.txt | grep SWMTKN
+    8  docker node lsdocker node ls
+    9  docker node ls
+   10  cd /vagrant/
+   11  ls
+   12  docker ps
+   13  docker-compose down
+   14  docker-compose rm
+   15  docker stack deploy --compose-file docker-compose.yml innodbcl
+   16  docker stack services innodbcl
+   17  docker ps
+   18  docker node ls
+   19  docker ps
+   20  docker stack rm innodbcl
+   21  cd test/
+   22  docker ps
+   23  cd ..
+   24  docker-compose rm
+   25  docker-compose down
+   26  docker ps
+   27  cd test/
+   28  docker-compose up -d
+   29  docker ps
+   30  docker-compose down
+   31  docker-compose rm
+   32  cd ..
+   33  cd deploy/
+   34  docker-compose up -d
+   35  docker ps
+   36  mysql -u dbwebapp -pdbwebapp -h 127.0.0.1 -P 6446
+   37  docker stack services innodbcl
+   38  docker ps
+   39  docker-compose down
+   40  docker-compose rm
+   41  docker stack deploy --compose-file docker-compose.yml innodbcl
+   42  docker ps
+   43  docker stack rm innodbcl
+   44  docker ps
+   45  docker-compose up -d
+   46  docker ps
+   47  docker-compose down
+   48  docker-compose rm
+   49  docker stack deploy
+   50  docker stack deploy cli
+   51  docker stack deploy --compose-file /vagrant/deploy/docker-compose.yml innodbcl
+   52  docker ps
+   53  exit
+   54  cd /vagrant/deploy/
+   55  docker stack rm innodbcl
+   56  docker-compose up -d
+   57  docker-compose scale =2
+   58  docker-compose down
+   59  docker ps
+   60  docker stack deploy --compose-file docker-compose.yml innodbcl
+   61  docker stack services innodbcl
+   62  docker ps
+   63  docker stack rm innodbcl
+   64  docker ps
+   65  docker stack services innodbcl
+   66  docker stack deploy --compose-file docker-compose.yml innodbcl
+   67  docker stack rm innodbcl
+   68  docker stack deploy --compose-file docker-compose.yml innodbcl
+   69  docker stack rm innodbcl
+   70  docker stack deploy --compose-file docker-compose.yml innodbcl
+   71  docker ps
+   72  docker stack rm innodbcl
+   73  docker stack deploy --compose-file docker-compose.yml innodbcl
+   74  docker stack services innodbcl
+   75  docker ps
+   76  docker stack rm innodbcl
+   77  docker ps
+   78  docker stack deploy --compose-file docker-compose.yml innodbcl
+   79  docker ps
+   80  docker stack services innodbcl
+   81  docker ps
+   82  docker stack rm innodbcl
+   83  docker stack deploy --compose-file docker-compose.yml innodbcl
+   84  docker stack services innodbcl
+   85  docker stack services innodbcl  
+   86  docker ps
+   87  docker stack rm innodbcl
+   88  docker stack deploy --compose-file docker-compose.yml innodbcl
+   89  docker ps
+   90  docker stack rm innodbcl
+   91  docker stack deploy --compose-file docker-compose.yml innodbcl
+   92  docker ps
+   93  docker stack rm innodbcl
+   94  docker stack deploy --compose-file docker-compose.yml innodbcl
+   95  docker ps
+   96  docker stack rm innodbcl
+   97  docker stack deploy --compose-file docker-compose.yml innodbcl
+   98  docker ps
+   99  docker stack deploy --compose-file docker-compose.yml innodbcl
+  100  docker ps
+  101  docker stack deploy --compose-file docker-compose.yml innodbcl
+  102  docker ps
+  103  docker stack deploy --compose-file docker-compose.yml innodbcl
+  104  docker ps
+  105  docker stack rm innodbcl
+  106  docker stack deploy --compose-file docker-compose.yml innodbcl
+  107  docker ps
+  108  docker stack deploy --compose-file docker-compose.yml innodbcl
+  109  docker ps
+  110  docker stack deploy --compose-file docker-compose.yml innodbcl
+  111  docker ps
+  112  $(cat .env | grep ^[A-Z] | xargs)
+  113  $(cat *.env | grep ^[A-Z] | xargs)
+  114  $(cat mysql-server.env.env | grep ^[A-Z] | xargs)
+  115  $(cat mysql-server.env | grep ^[A-Z] | xargs)
+  116  docker stack deploy --compose-file docker-compose.yml innodbcl
+  117  docker stack rm innodbcl
+  118  docker stack deploy --compose-file docker-compose.yml innodbcl
+  119  docker stack rm innodbcl
+  120  docker ps
+  121  docker stack deploy --compose-file docker-compose.yml innodbcl
+  122  docker ps
+  123  docker inspect 194fd52aed4e
+  124  docker ps
+  125  mysql -u dbwebapp -pdbwebapp -h 127.0.0.1 -P 6446
+  126  docker ps
+  127  docker stack rm innodbcl
+  128  docker-compose up -d
+  129  docker ps
+  130  docker-compose down
+  131  docker-compose up
+  132  docker-compose up -d
+  133  docker ps
+  134  docker-compose up -d
+  135  docker ps
+  136  docker-compose up 
+  137  docker-compose rm
+  138  docker-compose up -d
+  139  docker ps
+  140  docker inspect c681d14ad441
+  141  docker ps
+  142  docker-compose down
+  143  docker-compose up -d
+  144  docker ps
+  145  docker-compose down
+  146  docker-compose up -d
+  147  docker ps
+  148  mysql -u dbwebapp -pdbwebapp -h 127.0.0.1 -P 6446
+  149  docker-compose down
+  150  docker-compose rm
+  151  docker stack deploy --compose-file docker-compose.yml innodbcl
+  152  docker ps
+  153  docker stack rm innodbcl
+  154  docker stack deploy --compose-file docker-compose.yml innodbcl
+  155  docker ps
+  156  watch "docker ps"
+  157  docker ps
+  158  docker inspect 4f3f2d590225 
+  159  docker run -t -i --env-file mysql-router.env --network xucfeha22n1x0967ib9rcir3o   mysql/mysql-router:8.0
+  160  docker ps
+  161  docker inspect 4f3f2d590225 -f "{{json .NetworkSettings.Networks }}"
+  162  docker network ls
+  163  #docker run -t -i --env-file mysql-router.env --network innodbcl_default   mysql/mysql-router:8.0
+  164  #docker run -t -i --env-file mysql-router.env --network innodbcl_default  mysql/mysql-router:8.0
+  165  docker run -t -i --env-file mysql-router.env --network innodbcl_default  mysql/mysql-router:8.0
+  166  docker service logs -f innodbcl
+  167  docker service ls
+  168  docker service logs -f w89fnrvvcpvl
+  169  docker service ls
+  170  docker service logs -f bxg9feb6aefz
+  171  docker service ls
+  172  docker service logs -f 44x4get80ak3
+  173  docker network ls
+  174  docker run -t -i --env-file mysql-router.env --network innodbcl_default  mysql/mysql-router:8.0
+  175  docker ps
+  176  docker exec -it 4f3f2d590225 bash
+  177  docker service ls
+  178  docker stack rm innodbcl
+  179  docker service ls
+  180  docker network ls
+  181  docker-compose up -d
+  182  docker network ls
+  183  docker-compose down
+  184  docker-compose up
+  185  docker-compose up -d
+  186  docker stack deploy --compose-file docker-compose.yml innodbcl
+  187  docker service ls
+  188  docker service logs -f 44x4get80ak3
+  189  docker service logs -f innodbcl_mysql-shell
+  190  docker ps
+  191  docker service logs -f innodbcl_mysql-shell
+  192  docker stack rm innodbcl
+  193  docker stack deploy --compose-file docker-compose.yml innodbcl
+  194  docker ps
+  195  docker stack rm innodbcl
+  196  docker stack deploy --compose-file docker-compose.yml innodbcl
+  197  docker stack rm innodbcl
+  198  docker stack deploy --compose-file docker-compose.yml innodbcl
+  199  docker stack rm innodbcl
+  200  docker stack deploy --compose-file docker-compose.yml innodbcl
+  201  docker network create  innodbcl_main
+  202  docker stack deploy --compose-file docker-compose.yml innodbcl
+  203  docker ps
+  204  docker service logs -f innodbcl_mysql-shell
+  205  docker ps
+  206  docker service logs -f innodbcl_mysql-shell
+  207  docker network ls
+  208  docker stack rm innodbcl
+  209  docker network ls
+  210  docker ps
+  211  docker service logs -f innodbcl_mysql-shell
+  212  docker stack deploy --compose-file docker-compose.yml innodbcl
+  213  docker network ls
+  214  docker stack deploy --compose-file docker-compose.yml innodbcl
+  215  docker network rm f9c3b86cbe11
+  216  docker network rm 913e4df004f5
+  217  docker network ls
+  218  docker stack deploy --compose-file docker-compose.yml innodbcl
+  219  docker stack rm innodbcl
+  220  docker ps
+  221  docker network ls
+  222  docker stack deploy --compose-file docker-compose.yml innodbcl
+  223  docker network create --config-only --subnet=172.255.0.0/24 --ip-range=172.255.0.0/24 --gateway=172.255.0.1 bdge_config 
+  224  docker network create --attachable -d bridge --scope=swarm --config-from bdge_config innodbcl_main
+  225  docker net ls
+  226  docker network ls
+  227  docker network rm ff841ed43a2c
+  228  docker network create --attachable -d bridge --scope=swarm --config-from bdge_config innodbcl_main
+  229  docker network ls
+  230  docker stack rm innodbcl
+  231  docker stack deploy --compose-file docker-compose.yml innodbcl
+  232  docker stack deploy --compose-file docker-compose.yml innodbcl --network innodbcl_main
+  233  docker stack deploy --compose-file docker-compose.yml innodbcl
+  234  docker network ls
+  235  docker network rm 7y22eq67gxq7
+  236  docker network ls
+  237  docker stack deploy --compose-file docker-compose.yml innodbcl
+  238  docker network create -d bridge testservice
+  239  docker stack deploy --compose-file docker-compose.yml innodbcl
+  240  docker network ls
+  241  docker network rm testservice
+  242  docker network create -d bridge testservice -scope swarm
+  243  docker network create -d bridge testservice --scope swarm
+  244  docker network ls
+  245  docker stack rm innodbcl
+  246  docker stack deploy --compose-file docker-compose.yml innodbcl
+  247  history > /vagrant/history.txt

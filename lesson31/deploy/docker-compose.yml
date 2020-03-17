@@ -1,30 +1,77 @@
-version: '3'
+version: '3.7'
 services:
   mysql-server-1:
-    env_file:
-      - mysql-server.env
+    environment:
+      - MYSQL_ROOT_PASSWORD=mysql
+      - MYSQL_ROOT_HOST=%
     image: mysql/mysql-server:8.0.12
+    networks:
+      - main
+    healthcheck:
+      disable: true
+    deploy:
+      replicas: 1
+      update_config:
+        delay: 600s
+      restart_policy:
+        condition: none
+        delay: 800s
     ports:
       - "3301:3306"
     command: ["mysqld","--server_id=1","--binlog_checksum=NONE","--gtid_mode=ON","--enforce_gtid_consistency=ON","--log_bin","--log_slave_updates=ON","--master_info_repository=TABLE","--relay_log_info_repository=TABLE","--transaction_write_set_extraction=XXHASH64","--user=mysql","--skip-host-cache","--skip-name-resolve", "--default_authentication_plugin=mysql_native_password"]
   mysql-server-2:
-    env_file:
-      - mysql-server.env
+    environment:
+      - MYSQL_ROOT_PASSWORD=mysql
+      - MYSQL_ROOT_HOST=%
     image: mysql/mysql-server:8.0.12
+    networks:
+      - main
+    healthcheck:
+      disable: true
+    deploy:
+      replicas: 1
+      update_config:
+        delay: 600s
+      restart_policy:
+        condition: none
+        delay: 800s
     command: ["mysqld","--server_id=2","--binlog_checksum=NONE","--gtid_mode=ON","--enforce_gtid_consistency=ON","--log_bin","--log_slave_updates=ON","--master_info_repository=TABLE","--relay_log_info_repository=TABLE","--transaction_write_set_extraction=XXHASH64","--user=mysql","--skip-host-cache","--skip-name-resolve", "--default_authentication_plugin=mysql_native_password"]
     ports:
       - "3302:3306"
   mysql-server-3:
-    env_file:
-      - mysql-server.env
+    environment:
+      - MYSQL_ROOT_PASSWORD=mysql
+      - MYSQL_ROOT_HOST=%
     image: mysql/mysql-server:8.0.12
+    networks:
+      - main
+    healthcheck:
+      disable: true
+    deploy:
+      replicas: 1
+      update_config:
+        delay: 600s
+      restart_policy:
+        condition: none
+        delay: 800s
     command: ["mysqld","--server_id=3","--binlog_checksum=NONE","--gtid_mode=ON","--enforce_gtid_consistency=ON","--log_bin","--log_slave_updates=ON","--master_info_repository=TABLE","--relay_log_info_repository=TABLE","--transaction_write_set_extraction=XXHASH64","--user=mysql","--skip-host-cache","--skip-name-resolve", "--default_authentication_plugin=mysql_native_password"]
     ports:
       - "3303:3306"
   mysql-shell:
-    env_file:
-      - mysql-shell.env
+    environment:
+      - MYSQL_USER=root
+      - MYSQL_HOST=mysql-server-1
+      - MYSQL_PORT=3306
+      - MYSQL_PASSWORD=mysql
+      - MYSQLSH_SCRIPT=/scripts/setupCluster.js
+      - MYSQL_SCRIPT=/scripts/db.sql
     image: neumayer/mysql-shell-batch
+    networks:
+      - main
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
     volumes:
         - ./scripts/:/scripts/
     depends_on:
@@ -33,9 +80,19 @@ services:
       - mysql-server-3
     restart: on-failure
   mysql-router:
-    env_file:
-      - mysql-router.env
+    environment:
+      - MYSQL_USER=root
+      - MYSQL_HOST=mysql-server-1
+      - MYSQL_PORT=3306
+      - MYSQL_PASSWORD=mysql
+      - MYSQL_INNODB_NUM_MEMBERS=3  
     image: mysql/mysql-router:8.0
+    networks:
+      - main
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
     ports:
       - "6446:6446"
     depends_on:
@@ -45,4 +102,13 @@ services:
       - mysql-shell
     restart: on-failure
 
+networks:
+  main:
+    external:
+      name: testservice
 #docker run -t -i --env-file mysql-shell.env --network test_default -v $(pwd)/scripts:/scripts/  neumayer/mysql-shell-batch
+#docker run -t -i --env-file mysql-router.env --network innodbcl_default   mysql/mysql-router:8.0
+#docker service ls
+#docker service logs -f 44x4get80ak3
+#docker network create 
+#docker service logs -f innodbcl_mysql-shell
