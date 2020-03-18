@@ -39,3 +39,4 @@
 | https://github.com/mercury131/otus-linux/tree/master/lesson28 | Динамический веб контент
 | https://github.com/mercury131/otus-linux/tree/master/lesson29 | Mysql
 | https://github.com/mercury131/otus-linux/tree/master/lesson30 | Почтовые сервера. Postfix,Dovecot
+| https://github.com/mercury131/otus-linux/tree/master/lesson31 | MySQL - бэкап, репликация, кластер (InnoDB cluster in Docker Swarm)
