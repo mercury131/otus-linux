@@ -67,20 +67,22 @@ Vagrant.configure("2") do |config|
 		  curl -L "https://github.com/docker/compose/releases/download/1.25.4/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
 		  chmod +x /usr/local/bin/docker-compose
 		  ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
-		  cp /vagrant/docker.service /etc/systemd/system/docker.service
+		  #cp /vagrant/docker.service /etc/systemd/system/docker.service
 		  systemctl daemon-reload
 		  sleep 30
 		  systemctl start docker
 		  setenforce 0
+		  docker swarm init --advertise-addr 192.168.11.101 > /vagrant/swarm.txt
 		  #docker network create testservice
 		  cd /vagrant/deploy
 		  #docker-compose up -d
 		  docker stack deploy --compose-file docker-compose.yml innodbcl
 		  yum install mysql -y
-		  sleep 600
+		  sleep 60
 		  docker stack services innodbcl
 		  #docker stack rm innodbcl
 		  docker ps
+		  #docker node ls
 		  #mysql -u dbwebapp -pdbwebapp -h 127.0.0.1 -P 6446
 
           SHELL
@@ -111,7 +113,7 @@ Vagrant.configure("2") do |config|
 		  sleep 30
 		  systemctl start docker
 		  setenforce 0
-		  #$(cat /vagrant/swarm.txt | grep SWMTKN)
+		  $(cat /vagrant/swarm.txt | grep SWMTKN)
 		  #docker network create testservice
 		  #cd /vagrant/
 		  #docker-compose up -d

@@ -6,18 +6,22 @@ services:
       - MYSQL_ROOT_HOST=%
     image: mysql/mysql-server:8.0.12
     networks:
-      - main
+       - overlay
     healthcheck:
       disable: true
     deploy:
       replicas: 1
+      endpoint_mode: dnsrr
       update_config:
         delay: 600s
       restart_policy:
         condition: none
         delay: 800s
     ports:
-      - "3301:3306"
+      - target: 3306
+        published: 3301
+        protocol: tcp
+        mode: host
     command: ["mysqld","--server_id=1","--binlog_checksum=NONE","--gtid_mode=ON","--enforce_gtid_consistency=ON","--log_bin","--log_slave_updates=ON","--master_info_repository=TABLE","--relay_log_info_repository=TABLE","--transaction_write_set_extraction=XXHASH64","--user=mysql","--skip-host-cache","--skip-name-resolve", "--default_authentication_plugin=mysql_native_password"]
   mysql-server-2:
     environment:
@@ -25,11 +29,12 @@ services:
       - MYSQL_ROOT_HOST=%
     image: mysql/mysql-server:8.0.12
     networks:
-      - main
+       - overlay
     healthcheck:
       disable: true
     deploy:
       replicas: 1
+      endpoint_mode: dnsrr
       update_config:
         delay: 600s
       restart_policy:
@@ -37,18 +42,22 @@ services:
         delay: 800s
     command: ["mysqld","--server_id=2","--binlog_checksum=NONE","--gtid_mode=ON","--enforce_gtid_consistency=ON","--log_bin","--log_slave_updates=ON","--master_info_repository=TABLE","--relay_log_info_repository=TABLE","--transaction_write_set_extraction=XXHASH64","--user=mysql","--skip-host-cache","--skip-name-resolve", "--default_authentication_plugin=mysql_native_password"]
     ports:
-      - "3302:3306"
+      - target: 3306
+        published: 3302
+        protocol: tcp
+        mode: host
   mysql-server-3:
     environment:
       - MYSQL_ROOT_PASSWORD=mysql
       - MYSQL_ROOT_HOST=%
     image: mysql/mysql-server:8.0.12
     networks:
-      - main
+       - overlay
     healthcheck:
       disable: true
     deploy:
       replicas: 1
+      endpoint_mode: dnsrr
       update_config:
         delay: 600s
       restart_policy:
@@ -56,7 +65,10 @@ services:
         delay: 800s
     command: ["mysqld","--server_id=3","--binlog_checksum=NONE","--gtid_mode=ON","--enforce_gtid_consistency=ON","--log_bin","--log_slave_updates=ON","--master_info_repository=TABLE","--relay_log_info_repository=TABLE","--transaction_write_set_extraction=XXHASH64","--user=mysql","--skip-host-cache","--skip-name-resolve", "--default_authentication_plugin=mysql_native_password"]
     ports:
-      - "3303:3306"
+      - target: 3306
+        published: 3303
+        protocol: tcp
+        mode: host
   mysql-shell:
     environment:
       - MYSQL_USER=root
@@ -67,9 +79,10 @@ services:
       - MYSQL_SCRIPT=/scripts/db.sql
     image: neumayer/mysql-shell-batch
     networks:
-      - main
+       - overlay
     deploy:
       replicas: 1
+      endpoint_mode: dnsrr
       restart_policy:
         condition: on-failure
     volumes:
@@ -88,13 +101,17 @@ services:
       - MYSQL_INNODB_NUM_MEMBERS=3  
     image: mysql/mysql-router:8.0
     networks:
-      - main
+       - overlay
     deploy:
       replicas: 1
+      endpoint_mode: dnsrr
       restart_policy:
         condition: on-failure
     ports:
-      - "6446:6446"
+      - target: 6446
+        published: 6446
+        protocol: tcp
+        mode: host
     depends_on:
       - mysql-server-1
       - mysql-server-2
@@ -103,9 +120,8 @@ services:
     restart: on-failure
 
 networks:
-  main:
-    external:
-      name: testservice
+  overlay:
+  
 #docker run -t -i --env-file mysql-shell.env --network test_default -v $(pwd)/scripts:/scripts/  neumayer/mysql-shell-batch
 #docker run -t -i --env-file mysql-router.env --network innodbcl_default   mysql/mysql-router:8.0
 #docker service ls
