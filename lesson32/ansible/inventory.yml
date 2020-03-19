@@ -1,0 +1,4 @@
+[postgres]
+postgres1 role='master' ip='192.168.11.101' trust_connect='host all all 192.168.11.0/24 md5' trust_repl='host	replication	replicator	192.168.11.102/24		trust'
+postgres2 role='slave' ip='192.168.11.102'  trust_connect='host all all 192.168.11.0/24 md5' trust_repl='host	replication	replicator	192.168.11.102/24		trust' masterip='192.168.11.101'
+

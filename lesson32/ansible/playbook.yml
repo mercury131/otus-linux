@@ -1,0 +1,7 @@
+---
+ - hosts: postgres
+   become: true
+   tasks:
+   - include_role:
+        name: postgres-replication
+

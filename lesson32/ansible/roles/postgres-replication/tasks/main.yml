@@ -1,0 +1,94 @@
+---
+   
+    - name: ADD EPEL
+      yum: pkg=epel-release state=latest
+      
+    - name: Add postgres repo
+      shell: yum install https://download.postgresql.org/pub/repos/yum/11/redhat/rhel-7-x86_64/pgdg-centos11-11-2.noarch.rpm -y
+      ignore_errors: True
+      
+    - name: Install postgres 11 server
+      yum: pkg=postgresql11-server state=latest
+      
+    - name: Install postgres 11
+      yum: pkg=postgresql11 state=latest
+      
+    - name: Start initDB
+      shell: /usr/pgsql-11/bin/postgresql-11-setup initdb
+      ignore_errors: True
+      
+    - name: create ansible directory
+      shell: mkdir -p /var/lib/pgsql/.ansible/tmp
+
+    - name: Set ansible permisisons
+      shell: chown postgres -R /var/lib/pgsql/.ansible
+
+    - name: Copy master postgresql.conf
+      template: src=postgresql_master.conf dest=/var/lib/pgsql/11/data/postgresql.conf
+      when: role == "master"
+      
+      
+    - name: Copy master pg_hba.conf
+      template: src=pg_hba_master.conf dest=/var/lib/pgsql/11/data/pg_hba.conf
+      when: role == "master"
+      
+      
+    - name: Set Permissions
+      shell: chown -R postgres:postgres /var/lib/pgsql/11/data/
+      notify:
+          - postgres start
+          
+    - name: Start postgres
+      shell: systemctl start postgresql-11
+      when: role == "master"
+          
+    - name: Create Replication User
+      shell: psql -c "CREATE ROLE replicator LOGIN REPLICATION ENCRYPTED PASSWORD 'replicator_password';"
+      become: yes
+      become_user: postgres
+      when: role == "master"
+      ignore_errors: True
+      
+    - name: Create Replication Slot
+      shell: psql -c "SELECT * FROM pg_create_physical_replication_slot('replicator');"
+      become: yes
+      become_user: postgres
+      when: role == "master"
+      
+    - name: Create test DB
+      shell: psql -c "CREATE DATABASE replitest"
+      become: yes
+      become_user: postgres
+      when: role == "master"
+      
+    - name: Stop postgres
+      shell: systemctl stop postgresql-11
+      when: role == "slave"
+      
+    - name: Create postgres backup
+      shell: mv /var/lib/pgsql/11/data /var/lib/pgsql/11/data.bak
+      when: role == "slave"
+      
+    - name: Restore postgres backup from master
+      shell: pg_basebackup -h {{ hostvars[inventory_hostname].masterip }} -U replicator -D /var/lib/pgsql/11/data/ -P --no-password --slot replicator
+      when: role == "slave"
+      
+    - name: Copy slave pg_hba.conf
+      template: src=pg_hba_slave.conf dest=/var/lib/pgsql/11/data/pg_hba.conf
+      when: role == "slave"
+      
+    - name: Copy slave postgresql.conf
+      template: src=postgresql_slave.conf dest=/var/lib/pgsql/11/data/postgresql.conf
+      when: role == "slave"
+
+    - name: Copy slave postgresql.conf
+      copy: src=recovery.conf dest=/var/lib/pgsql/11/data/recovery.conf
+      when: role == "slave"
+      
+    - name: Set Permissions
+      shell: chown -R postgres:postgres /var/lib/pgsql/11/data/
+      when: role == "slave"
+      notify:
+          - postgres start
+          
+          

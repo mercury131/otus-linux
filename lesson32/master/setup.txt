@@ -1,0 +1,54 @@
+master
+
+yum install https://download.postgresql.org/pub/repos/yum/11/redhat/rhel-7-x86_64/pgdg-centos11-11-2.noarch.rpm -y
+
+
+yum -y install postgresql11-server postgresql11
+
+/usr/pgsql-11/bin/postgresql-11-setup initdb
+
+systemctl start postgresql-11
+
+systemctl enable postgresql-11
+
+/var/lib/pgsql/11/data/postgresql.conf
+	listen_addresses = '192.168.11.101'
+	
+	
+/var/lib/pgsql/11/data/pg_hba.conf
+	host all all 192.168.11.0/24 md5
+	
+	
+systemctl restart postgresql-11
+
+
+psql -c "alter user postgres with password 'StrongPassword'" 
+
+
+su - postgres -c 'psql -c "alter user postgres with password 'StrongPassword'" '
+
+
+repl
+
+su - postgres
+
+
+
+psql -c "CREATE ROLE replicator LOGIN REPLICATION ENCRYPTED PASSWORD 'replicator_password';"
+
+psql -c "SELECT * FROM pg_create_physical_replication_slot('replicator');"
+
+/var/lib/pgsql/11/data/pg_hba.conf
+	host	replication	replicator	192.168.11.102/24		trust
+	
+	
+systemctl restart postgresql-11
+
+
+after start 
+
+sudo -u postgres psql -c "CREATE DATABASE replitest"
+
+sudo -u postgres psql -c "CREATE DATABASE replitest2"
+
+
