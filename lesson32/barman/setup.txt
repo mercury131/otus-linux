@@ -1,0 +1,85 @@
+yum install https://download.postgresql.org/pub/repos/yum/11/redhat/rhel-7-x86_64/pgdg-centos11-11-2.noarch.rpm -y
+
+
+yum -y install postgresql11-server postgresql11
+
+/usr/pgsql-11/bin/postgresql-11-setup initdb
+
+
+
+/var/lib/pgsql/11/data/postgresql.conf
+	listen_addresses = '192.168.11.103'
+
+	
+systemctl start postgresql-11
+
+systemctl enable postgresql-11
+
+yum install /vagrant/barman/python-barman-2.10-2.el7.noarch.rpm  -y 
+
+yum install /vagrant/barman/barman-2.10-2.el7.noarch.rpm  -y
+
+yum install /vagrant/barman/barman-cli-2.10-2.el7.noarch.rpm -y
+
+yum install rsync -y
+
+		#On master
+		su - postgres
+
+		psql -c "CREATE ROLE barman LOGIN SUPERUSER  ENCRYPTED PASSWORD 'barman_password';"
+
+
+
+psql -c 'SELECT version()' -U barman -h postgres1 postgres
+
+psql -c 'SELECT version()' -h postgres1 postgres
+
+adduser barman
+
+
+echo -e "barman\nbarman" | passwd barman
+
+nano /etc/barman.d/pgsql.conf
+	[postgres1]
+	description =  "PostgreSQL server"
+	conninfo = host=192.168.11.101 user=barman dbname=replitest
+	ssh_command = ssh postgres@postgres1
+	retention_policy = RECOVERY WINDOW OF 2 WEEKS
+
+
+sudo -i -u barman
+
+echo "postgres1:5432:*:barman:barman_password" >> ~/.pgpass
+
+
+		# On master
+		echo -e "postgres\npostgres" | passwd postgres
+
+ssh-keygen -t rsa
+
+echo -e "postgres" | ssh-copy-id postgres@postgres1
+
+	#on master
+	sudo -i -u postgres
+	ssh-keygen -t rsa
+
+	echo -e "barman" | ssh-copy-id barman@backup3
+
+
+		#On master
+		nano /var/lib/pgsql/11/data/pg_hba.conf
+			host    all             all             192.168.11.103/24         trust	
+
+		nano /var/lib/pgsql/11/data/postgresql.conf	
+			wal_level = archive
+			archive_mode = on
+			archive_command = 'rsync -a %p barman@192.168.11.103:/var/lib/barman/postgres1/incoming/%f'
+	
+		systemctl restart postgresql-11
+		yum install rsync -y
+		
+		
+	
+sudo -i -u barman
+
+barman check postgres1
