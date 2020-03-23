@@ -1,0 +1,59 @@
+yum install https://download.postgresql.org/pub/repos/yum/11/redhat/rhel-7-x86_64/pgdg-centos11-11-2.noarch.rpm -y
+
+
+yum -y install postgresql11-server postgresql11
+
+/usr/pgsql-11/bin/postgresql-11-setup initdb
+
+systemctl restart postgresql-11
+
+yum install -y https://download.postgresql.org/pub/repos/yum/reporpms/EL-8-x86_64/pgdg-redhat-repo-latest.noarch.rpm
+
+yum install barman -y
+
+		yum install barman -y
+		su - postgres
+		psql -c "CREATE ROLE barman LOGIN SUPERUSER  ENCRYPTED PASSWORD 'barman_password';"
+		psql -c "CREATE ROLE streaming_barman LOGIN REPLICATION ENCRYPTED PASSWORD 'barman_password';"
+
+		
+		cat /var/lib/pgsql/11/data/pg_hba.conf
+		host    replication     streaming_barman      192.168.11.103/24               trust
+		systemctl restart postgresql-11
+		
+
+		
+
+[streaming-pg]
+description =  "PostgreSQL Database 1 (Streaming-Only)"
+conninfo = host=postgres1 user=barman dbname=postgres
+streaming_conninfo = host=postgres1 user=streaming_barman
+backup_method = postgres
+streaming_archiver = on
+slot_name = barman
+
+psql -c 'SELECT version()' -U barman -h postgres1 postgres
+
+	nano /var/lib/pgsql/11/data/postgresql.conf
+	wal_level = 'replica'
+	max_wal_senders = 2
+	max_replication_slots = 2
+	systemctl restart postgresql-11
+	archive_command = 'rsync -a %p barman@192.168.11.103:/var/lib/barman/streaming-pg/incoming/%f'
+	archive_mode = on
+
+
+echo -e "barman\nbarman" | passwd barman
+sudo -i -u barman
+ssh-keygen -t rsa
+	echo -e "postgres\npostgres" | passwd postgres
+	
+echo -e "postgres" | ssh-copy-id postgres@postgres1
+	sudo -i -u postgres
+	ssh-keygen -t rsa
+
+	echo -e "barman" | ssh-copy-id barman@backup3
+
+barman receive-wal --create-slot streaming-pg
+barman switch-wal --force --archive streaming-pg
+
