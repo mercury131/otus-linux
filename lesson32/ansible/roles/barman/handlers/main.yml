@@ -1,0 +1,9 @@
+---
+    - name: postgres restart
+      service: name=postgresql-11 state=restarted
+      
+    - name: postgres start
+      service: name=postgresql-11 state=started
+      
+    - name: network stop
+      service: name=postgresql-11 state=stopped

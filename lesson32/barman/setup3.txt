@@ -1,0 +1,64 @@
+yum install -y https://download.postgresql.org/pub/repos/yum/reporpms/EL-7-x86_64/pgdg-redhat-repo-latest.noarch.rpm
+
+yum install barman -y
+
+
+mkdir -p /dbbackups/barman && chown barman:barman /dbbackups/barman
+mkdir -p /dbbackups/barman/pgdb/incoming/ && chown barman:barman /dbbackups/barman/pgdb/incoming/
+
+/etc/barman.conf
+
+[barman]
+barman_user = barman
+configuration_files_directory = /etc/barman.d
+barman_home = /dbbackups/barman
+log_file = /dbbackups/barman/logs/barman.log
+log_level = INFO 
+compression = gzip  
+
+
+[pgdb]
+description="Main PostgreSQL server"
+conninfo=host=postgres1 user=barman dbname=postgres
+ssh_command=ssh postgres@postgres1
+archiver=on
+backup_method = rsync
+
+		yum install barman -y
+		su - postgres
+		psql -c "CREATE ROLE barman LOGIN SUPERUSER  ENCRYPTED PASSWORD 'barman_password';"
+		
+		cat /var/lib/pgsql/11/data/pg_hba.conf
+		host    all     barman      192.168.11.103/24               trust
+		sed -e '/192.168.11.0/s/^/#/g' -i /var/lib/pgsql/11/data/pg_hba.conf
+		systemctl restart postgresql-11
+		echo -e "barman\nbarman" | passwd barman
+		echo -e "postgres\npostgres" | passwd postgres
+		
+sudo -i -u barman
+ssh-keygen -t rsa
+ssh-copy-id postgres@postgres1
+[root@backup3 ~]# ls /var/lib/barman/.ssh/
+authorized_keys  id_rsa  id_rsa.pub  known_hosts
+
+
+		wal_level=replica
+		archive_mode=on
+		archive_command='rsync -a  %p  barman@192.168.11.103:/dbbackups/barman/pgdb/incoming/%f'
+		max_wal_senders = 10 
+		max_replication_slots = 10
+		systemctl restart postgresql-11
+		
+echo -e "barman\nbarman" | passwd barman
+
+	su - postgres
+	ssh-keygen -t rsa
+	ssh-copy-id barman@backup3
+	[root@postgres1 ~]# ls /var/lib/pgsql/.ssh/
+	authorized_keys  id_rsa  id_rsa.pub  known_hosts
+	
+
+barman switch-xlog --force --archive pgdb
+barman check pgdb
+barman backup pgdb
+

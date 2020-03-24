@@ -1,0 +1,192 @@
+---
+   
+    - name: ADD EPEL
+      yum: pkg=epel-release state=latest
+      
+    - name: Add postgres repo
+      shell: yum install https://download.postgresql.org/pub/repos/yum/reporpms/EL-7-x86_64/pgdg-redhat-repo-latest.noarch.rpm -y
+      ignore_errors: True
+      
+    - name: Install Barman
+      yum: pkg=barman state=latest
+      
+    - name: Create backup dirs
+      shell: mkdir -p /dbbackups/barman && chown -R barman:barman /dbbackups/barman
+      when: role == "backup"
+      
+    - name: Create backup dirs for incoming
+      shell: mkdir -p /dbbackups/barman/pgdb/incoming/ && chown barman:barman /dbbackups/barman/pgdb/incoming/
+      when: role == "backup"
+      
+    - name: Copy Barman Config
+      copy: src=barman.conf dest=/etc/barman.conf
+      when: role == "backup"
+      
+      
+    - name: create ansible directory
+      shell: mkdir -p /var/lib/pgsql/.ansible/tmp
+      when: role == "master"
+
+    - name: Set ansible permisisons
+      shell: chown postgres -R /var/lib/pgsql/.ansible
+      when: role == "master"
+      
+    - name: create ansible barman directory
+      shell: mkdir -p /var/lib/barman/.ansible/tmp
+      when: role == "backup"
+
+    - name: Set ansible barman permisisons
+      shell: chown barman -R /var/lib/barman/.ansible
+      when: role == "backup"
+
+
+    - name: Create barman User
+      shell: psql -c "CREATE ROLE barman LOGIN SUPERUSER  ENCRYPTED PASSWORD 'barman_password';"
+      become: yes
+      become_user: postgres
+      when: role == "master"
+      ignore_errors: True    
+      
+    - name: Setup postgres master node 1
+      shell: echo "host    all     barman      192.168.11.103/24               trust" >> /var/lib/pgsql/11/data/pg_hba.conf
+      when: role == "master"
+      
+    - name: Setup postgres master node 2
+      shell: sed -e '/192.168.11.0/s/^/#/g' -i /var/lib/pgsql/11/data/pg_hba.conf
+      when: role == "master" 
+
+    - name: Setup postgres master node 2
+      shell:  echo "wal_level=replica" >> /var/lib/pgsql/11/data/postgresql.conf
+      when: role == "master" 
+      
+    - name: Setup postgres master node 3
+      shell:  echo "archive_mode=on" >> /var/lib/pgsql/11/data/postgresql.conf
+      when: role == "master" 
+      
+    - name: Setup postgres master node 4
+      shell:  echo "archive_command='rsync -a  %p  barman@192.168.11.103:/dbbackups/barman/pgdb/incoming/%f'" >> /var/lib/pgsql/11/data/postgresql.conf
+      when: role == "master" 
+      
+    - name: Setup postgres master node 5
+      shell:  echo "max_wal_senders = 10 " >> /var/lib/pgsql/11/data/postgresql.conf
+      when: role == "master" 
+      
+    - name: Setup postgres master node 6
+      shell:  echo "max_replication_slots = 10" >> /var/lib/pgsql/11/data/postgresql.conf
+      when: role == "master" 
+      notify:
+          - postgres restart
+
+    - name: Create ssh directory backup
+      shell:  mkdir -p /var/lib/barman/.ssh/
+      when: role == "backup"
+      
+    - name: Create ssh directory master
+      shell:  mkdir -p /var/lib/pgsql/.ssh/
+      when: role == "master"
+    
+    - name: set permissions to ssh directory
+      shell:  chmod 0700 /var/lib/barman/.ssh/
+      when: role == "backup"
+      
+    - name: set permissions tos ssh directory
+      shell:  chmod 0700 /var/lib/pgsql/.ssh/
+      when: role == "master"
+      
+    - name: set owner to ssh directory
+      shell:  chown barman  /var/lib/barman/.ssh/
+      when: role == "backup"
+      
+    - name: set permissions to ssh directory
+      shell:  chown postgres /var/lib/pgsql/.ssh/
+      when: role == "master"
+      
+    - name: Copy authorized_keys
+      copy:
+        src: postgres1/ssh/authorized_keys
+        dest: /var/lib/pgsql/.ssh/authorized_keys
+        owner: postgres
+        mode: '0600'
+      when: role == "master"
+      
+    - name: Copy id_rsa
+      copy:
+        src: postgres1/ssh/id_rsa
+        dest: /var/lib/pgsql/.ssh/id_rsa
+        owner: postgres
+        mode: '0600'
+      when: role == "master"
+      
+    - name: Copy id_rsa.pub
+      copy:
+        src: postgres1/ssh/id_rsa.pub
+        dest: /var/lib/pgsql/.ssh/id_rsa.pub
+        owner: postgres
+        mode: '0644'
+      when: role == "master"
+      
+    - name: Copy known_hosts
+      copy:
+        src: postgres1/ssh/known_hosts
+        dest: /var/lib/pgsql/.ssh/known_hosts
+        owner: postgres
+        mode: '0644'
+      when: role == "master"
+     
+      
+    - name: Copy authorized_keys
+      copy:
+        src: backup3/ssh/authorized_keys
+        dest: /var/lib/barman/.ssh/authorized_keys
+        owner: barman
+        mode: '0600'
+      when: role == "backup"
+      
+    - name: Copy id_rsa
+      copy:
+        src: backup3/ssh/id_rsa
+        dest: /var/lib/barman/.ssh/id_rsa
+        owner: barman
+        mode: '0600'
+      when: role == "backup"
+      
+    - name: Copy id_rsa.pub
+      copy:
+        src: backup3/ssh/id_rsa.pub
+        dest: /var/lib/barman/.ssh/id_rsa.pub
+        owner: barman
+        mode: '0644'
+      when: role == "backup"
+      
+    - name: Copy known_hosts
+      copy:
+        src: backup3/ssh/known_hosts
+        dest: /var/lib/barman/.ssh/known_hosts
+        owner: barman
+        mode: '0644'
+      when: role == "backup"
+      
+    - name: Set owner to backup dirs
+      shell: chown -R barman:barman /dbbackups/barman
+      when: role == "backup"
+
+          
+    - name: switch-xlog 
+      shell: barman switch-xlog --force --archive pgdb
+      when: role == "backup"
+      ignore_errors: True
+      
+    - name: waiting
+      shell: sleep 60
+      when: role == "backup"
+      
+    - name: Check backup
+      shell: barman check pgdb
+      when: role == "backup"
+      ignore_errors: True
+      
+    - name: Start backup
+      shell: barman backup pgdb
+      when: role == "backup"
+      ignore_errors: True
+        

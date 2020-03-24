@@ -4,14 +4,15 @@
 - **VirtualBox** - ПО для создания виртуальных окружений
 - **Vagrant** - ПО для конфигурирования/шаблонизирования виртуальных машин
 - **Git** - система контроля версий
-- **Linux net tools** - сетевые утилиты Linux
-- **Quagga** - Программный маршрутизатор
+- **postgres** - Opensource БД
+- **barman** - система резервного копирования БД Postgres
+
 
 
 
 Используемые репозитории:
 - **https://github.com/mercury131/otus-linux** - репозиторий для выполнения домашних заданий OTUS
-- **https://github.com/mercury131/otus-linux/tree/master/lesson23** - ссылка на данное домашнее задание
+- **https://github.com/mercury131/otus-linux/tree/master/lesson32** - ссылка на данное домашнее задание
 
 
  
@@ -19,25 +20,18 @@
 
 В рамках данного домашнего задания выполнено:
 
-OSPF
-- Поднять три виртуалки
-- Объединить их разными private network
-1. Поднять OSPF между машинами средствами программных маршрутизаторов на выбор: Quagga, FRR или BIRD
-2. Изобразить ассиметричный роутинг
-3. Сделать один из линков "дорогим", но что бы при этом роутинг был симметричным
+PostgreSQL
+- Настроить hot_standby репликацию с использованием слотов
+- Настроить правильное резервное копирование
 
-Формат сдачи:
-Vagrantfile + ansible 
+Для сдачи работы присылаем ссылку на репозиторий, в котором должны обязательно быть Vagranfile и плейбук Ansible, конфигурационные файлы postgresql.conf, pg_hba.conf и recovery.conf, а так же конфиг barman, либо скрипт резервного копирования. Команда "vagrant up" должна поднимать машины с настроенной репликацией и резервным копированием. Рекомендуется в README.md файл вложить результаты (текст или скриншоты) проверки работы репликации и резервного копирования. 
 
 
 
 
 Используемые файлы и директории:
-- В директории lesson23 расположен Vagrantfile с образом Centos 7 и автоматическими шагами развертывания
+- В директории lesson32 расположен Vagrantfile с образом Centos 7 и автоматическими шагами развертывания
 
-В Vagrantfile реализована следующая сетевая схема:
-
-![network diagram](https://raw.githubusercontent.com/mercury131/otus-linux/master/lesson23/ospf.png)
 
 # Как проверить домашнее задание?
 
@@ -56,197 +50,93 @@ vagrant plugin install vagrant-reload
 Для запуска Vagrantfile автоматизированными шагами выполните:
 
 ```
-cd otus-linux/lesson23
+cd otus-linux/lesson32
 vagrant up 
 ```
 
-Далее зайдите на машину Router3 и выполните ansible playbook-и:
+Далее зайдите на машину backup3 и выполните ansible playbook-и:
 
 ```
-vagrant ssh Router3
+vagrant ssh backup3
 sudo -i
 ansible-playbook /home/vagrant/playbook.yml  -i /home/vagrant/.ansible/inventory.yml
+ansible-playbook /home/vagrant/backup.yml  -i /home/vagrant/.ansible/inventory.yml
 
 ```
 
-Данный playbook настроит OSPF между роутерами, проверить что все работает можно посмотрев маршруты:
+Данные playbook настроят репликацию между postgres серверами и настроят резервное копирование master
 
+
+Чтобы проверить репликацию подключитесь к серверу postgres1 и создайте новую БД 
 ```
-[root@Router3 ~]# ip r
-default via 10.0.2.2 dev enp0s3 proto dhcp metric 100
-10.0.2.0/24 dev enp0s3 proto kernel scope link src 10.0.2.15 metric 100
-192.168.20.0/24 dev enp0s8 proto kernel scope link src 192.168.20.2 metric 101
-192.168.30.0/24 dev enp0s9 proto kernel scope link src 192.168.30.1 metric 102
-192.168.40.0/24 via 192.168.20.1 dev enp0s8 proto zebra metric 20
+vagrant ssh postgres1
+sudo -i
+sudo -u postgres psql -c "CREATE DATABASE replitest2"
 ```
 
-И соседей роутера:
-
+Подключитесь к серверу postgres2 и и проверьте что новая БД реплицировалась
 ```
-[root@Router3 ~]# vtysh
+vagrant ssh postgres2
+sudo -i
+sudo -u postgres psql -c "\l"
 
-Hello, this is Quagga (version 0.99.22.4).
-Copyright 1996-2005 Kunihiro Ishiguro, et al.
+[root@postgres2 ~]# sudo -u postgres psql -c "\l"
 
-
-Router3# show ip ospf n
-
-    Neighbor ID Pri State           Dead Time Address         Interface            RXmtL RqstL DBsmL
-192.168.40.1      1 Full/DROther       7.549s 192.168.20.1    enp0s8:192.168.20.2      0     0     0
-192.168.30.2      1 Full/DROther       7.413s 192.168.30.2    enp0s9:192.168.30.1      0     0     0
-
-Router3# show ip ospf r
-============ OSPF network routing table ============
-N    192.168.20.0/24       [10] area: 0.0.0.0
-                           directly attached to enp0s8
-N    192.168.30.0/24       [100] area: 0.0.0.0
-                           directly attached to enp0s9
-N    192.168.40.0/24       [20] area: 0.0.0.0
-                           via 192.168.20.1, enp0s8
-
-============ OSPF router routing table =============
-
-============ OSPF external routing table ===========
+                                  List of databases
+    Name    |  Owner   | Encoding |   Collate   |    Ctype    |   Access privileges
+------------+----------+----------+-------------+-------------+-----------------------
+ postgres   | postgres | UTF8     | en_NZ.UTF-8 | en_NZ.UTF-8 |
+ replitest  | postgres | UTF8     | en_NZ.UTF-8 | en_NZ.UTF-8 |
+ replitest2 | postgres | UTF8     | en_NZ.UTF-8 | en_NZ.UTF-8 |
+ template0  | postgres | UTF8     | en_NZ.UTF-8 | en_NZ.UTF-8 | =c/postgres          +
+            |          |          |             |             | postgres=CTc/postgres
+ template1  | postgres | UTF8     | en_NZ.UTF-8 | en_NZ.UTF-8 | =c/postgres          +
+            |          |          |             |             | postgres=CTc/postgres
+(5 rows)
 
 ```
 
-Для включения ассиметричного роутинга выполните следующий playbook:
+Чтобы проверить работоспособность бэкапа, подключитесь к серверу backup3 и запустите резервное копирование:
 
 ```
-ansible-playbook /home/vagrant/playbook.yml  -i /home/vagrant/.ansible/inventory2.yml
-```
+vagrant ssh backup3
+sudo -i
+barman check pgdb
+Server pgdb:
+        PostgreSQL: OK
+        is_superuser: OK
+        wal_level: OK
+        directories: OK
+        retention policy settings: OK
+        backup maximum age: OK (no last_backup_maximum_age provided)
+        compression settings: OK
+        failed backups: OK (there are 0 failed backups)
+        minimum redundancy requirements: OK (have 1 backups, expected at least 0)
+        ssh: OK (PostgreSQL server)
+        not in recovery: OK
+        systemid coherence: OK
+        archive_mode: OK
+        archive_command: OK
+        continuous archiving: OK
+        archiver errors: OK
 
-Чтобы сделать 1 линк дорогим, но оставить роутинг симметричным, выполните следующий playbook:
 
-```
-ansible-playbook /home/vagrant/playbook.yml  -i /home/vagrant/.ansible/inventory3.yml
-```
 
-Настройка OSPF вручную:
 
-Устанавливаем quagga:
+barman backup pgdb
+Starting backup using rsync-exclusive method for server pgdb in /dbbackups/barman/pgdb/base/20200325T031002
+Backup start at LSN: 0/8000028 (000000010000000000000008, 00000028)
+Starting backup copy via rsync/SSH for 20200325T031002
+Copy done (time: 15 seconds)
+Asking PostgreSQL server to finalize the backup.
+Backup size: 38.7 MiB
+Backup end at LSN: 0/8000130 (000000010000000000000008, 00000130)
+Backup completed (start time: 2020-03-25 03:10:02.831422, elapsed time: 29 seconds)
+Processing xlog segments from file archival for pgdb
+        000000010000000000000007
+        000000010000000000000008
+        000000010000000000000008.00000028.backup
 
-```
-yum install -y quagga
-```
 
-Включаем форвардинг пакетов:
-
-```
-echo "net.ipv4.ip_forward = 1" >> /etc/sysctl.conf
-sysctl -p /etc/sysctl.conf
-```
-
-Переходим к настройке quagga:
-
-Стартуем сервис и включаем его:
-
-```
-systemctl enable zebra.service 
-systemctl start zebra.service
-```
-
-Настраиваем LAN интервейсы в консоли vtysh:
-
-```
-vtysh 
-my-gw# configure terminal
-my-gw(config)# log file /var/log/quagga/quagga.log
-my-gw(config)# do show  interface
-Interface enp0s8 is up, line protocol detection is disabled
-  index 2 metric 1 mtu 1500
-  flags: <UP,BROADCAST,RUNNING,MULTICAST>
-  HWaddr: 02:02:0a:ab:00:f4
-  inet 192.168.40.1/24 broadcast 10.0.11.255
-Interface enp0s9 is up, line protocol detection is disabled
-  index 3 metric 1 mtu 1500
-  flags: <UP,BROADCAST,RUNNING,MULTICAST>
-  HWaddr: 02:02:c0:a8:02:7a
-  inet 192.168.20.1/24 broadcast 192.168.3.255
-Interface lo is up, line protocol detection is disabled
-  index 1 metric 1 mtu 65536
-  flags: <UP,LOOPBACK,RUNNING>
-  inet 127.0.0.1/8
-my-gw(config)# interface enp0s8
-my-gw(config-if)# description LAN
-my-gw(config-if)# ip  address  192.168.40.1/24
-my-gw(config-if)# no shutdown
-my-gw(config-if)# exit
-my-gw(config)# interface enp0s9
-my-gw(config-if)# description LAN
-my-gw(config-if)# ip address 192.168.20.1/24
-my-gw(config-if)# exit
-my-gw(config)# do write
-my-gw(config)# exit
-my-gw# exit
-```
-
-Переходим к настройке OSPF:
-
-Копируем семпл с конфигом:
 
 ```
-cp /usr/share/doc/quagga-0.99.22.4/ospfd.conf.sample /etc/quagga/ospfd.conf
-```
-
-Меняем владельца:
-
-```
-chown quagga:quaggavt /etc/quagga/ospfd.conf
-```
-
-Включаем сервис и стартуем его:
-
-```
-systemctl enable ospfd.service 
-systemctl start ospfd.service
-```
-
-Переходим в консоль vtysh и настраиваем OSPF:
-
-```
-vtysh 
-my-gw# configure terminal
-my-gw# service integrated-vtysh-config
-my-gw(config)# router ospf
-my-gw(config-router)# network  192.168.20.0/24 area 0.0.0.0
-my-gw(config-router)# network  192.168.40.0/24 area 0.0.0.0
-my-gw(config-router)# router-id  192.168.40.1
-my-gw(config-if)# exit
-my-gw(config)# do write
-my-gw(config)# exit
-```
-
-По аналогии настраиваем соседние роутеры. 
-
-Проверяем соседей:
-
-```
-[root@Router2 ~]# vtysh
-
-Hello, this is Quagga (version 0.99.22.4).
-Copyright 1996-2005 Kunihiro Ishiguro, et al.
-
-Router2# show ip ospf n
-
-    Neighbor ID Pri State           Dead Time Address         Interface            RXmtL RqstL DBsmL
-192.168.40.1      1 Full/DROther       6.669s 192.168.40.1    enp0s8:192.168.40.2      0     0     0
-192.168.20.2      1 Full/DROther       7.626s 192.168.30.1    enp0s9:192.168.30.2      0     0     0
-Router2# show ip ospf r
-============ OSPF network routing table ============
-N    192.168.20.0/24       [60] area: 0.0.0.0
-                           via 192.168.40.1, enp0s8
-N    192.168.30.0/24       [100] area: 0.0.0.0
-                           directly attached to enp0s9
-N    192.168.40.0/24       [50] area: 0.0.0.0
-                           directly attached to enp0s8
-
-============ OSPF router routing table =============
-
-============ OSPF external routing table ===========
-
-```
-
-Для изменения стоимости маршрутов меняются параметры ip ospf cost в конфиге ospfd
-
-Чтобы работала динамическая маршрутизаторация от точки к точке необходимо для сетевых интерфейсов добавлять параметр ip ospf network point-to-point
