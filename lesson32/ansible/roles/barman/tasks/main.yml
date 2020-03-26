@@ -74,8 +74,10 @@
     - name: Setup postgres master node 6
       shell:  echo "max_replication_slots = 10" >> /var/lib/pgsql/11/data/postgresql.conf
       when: role == "master" 
-      notify:
-          - postgres restart
+          
+    - name: postgres restart
+      shell:  systemctl restart postgresql-11
+      when: role == "master"
 
     - name: Create ssh directory backup
       shell:  mkdir -p /var/lib/barman/.ssh/
@@ -170,15 +172,15 @@
       shell: chown -R barman:barman /dbbackups/barman
       when: role == "backup"
 
+    - name: waiting
+      shell: sleep 60
+      when: role == "backup"
           
     - name: switch-xlog 
       shell: barman switch-xlog --force --archive pgdb
       when: role == "backup"
       ignore_errors: True
       
-    - name: waiting
-      shell: sleep 60
-      when: role == "backup"
       
     - name: Check backup
       shell: barman check pgdb
