@@ -1,0 +1,173 @@
+# -*- mode: ruby -*-
+# vim: set ft=ruby :
+# -*- mode: ruby -*-
+# vim: set ft=ruby :
+home = ENV['HOME']
+
+MACHINES = {
+:postgres1 => {
+        :box_name => "cdaf/CentOSLVM",
+        :ip_addr => '192.168.11.101',
+  },
+  
+  :postgres2 => {
+        :box_name => "cdaf/CentOSLVM",
+        :ip_addr => '192.168.11.102',
+  },
+  
+  :postgres3 => {
+        :box_name => "cdaf/CentOSLVM",
+        :ip_addr => '192.168.11.103',
+  },
+  
+  :haproxy => {
+        :box_name => "cdaf/CentOSLVM",
+        :ip_addr => '192.168.11.104',
+  },
+  
+  :client => {
+        :box_name => "cdaf/CentOSLVM",
+        :ip_addr => '192.168.11.105',
+  },
+
+  
+}
+
+Vagrant.configure("2") do |config|
+
+  MACHINES.each do |boxname, boxconfig|
+
+    config.vm.define boxname do |box|
+
+        box.vm.box = boxconfig[:box_name]
+        box.vm.host_name = boxname.to_s
+		box.vm.network "private_network", ip: boxconfig[:ip_addr]
+
+          box.vm.provider :virtualbox do |vb|
+          vb.customize ["modifyvm", :id, "--memory", "1024","--cpus", "2"]
+
+          vb.name = boxname.to_s
+
+          end
+        
+
+		
+
+        box.vm.provision "shell", inline: <<-SHELL
+          mkdir -p ~root/.ssh
+                cp ~vagrant/.ssh/auth* ~root/.ssh
+        SHELL
+        
+        case boxname.to_s
+        when "postgres1"
+          box.vm.provision "shell", run: "always", inline: <<-SHELL
+            sudo systemctl stop firewalld
+			yum install epel-release  -y
+			echo "192.168.11.101  postgres1" >> /etc/hosts
+			echo "192.168.11.102  postgres2" >> /etc/hosts
+			echo "192.168.11.103  postgres3" >> /etc/hosts
+			echo "192.168.11.104  haproxy" >> /etc/hosts
+			echo "192.168.11.105  client" >> /etc/hosts
+			setenforce 0
+			yum -y install https://download.postgresql.org/pub/repos/yum/reporpms/EL-7-x86_64/pgdg-redhat-repo-latest.noarch.rpm
+			yum -y install postgresql12-server postgresql12 postgresql12-devel
+			yum -y install https://github.com/cybertec-postgresql/patroni-packaging/releases/download/1.6.0-1/patroni-1.6.0-1.rhel7.x86_64.rpm
+			yum -y install etcd
+			cp /vagrant/patroni/1/postgresql.yml /opt/app/patroni/etc/postgresql.yml
+			cp -f /vagrant/etcd/1/etcd.conf /etc/etcd/etcd.conf
+			systemctl enable etcd && systemctl start etcd
+			systemctl enable patroni && systemctl start patroni
+            SHELL
+			
+        when "postgres2"
+          box.vm.provision "shell", run: "always", inline: <<-SHELL
+			sudo systemctl stop firewalld
+			yum install epel-release  -y
+			echo "192.168.11.101  postgres1" >> /etc/hosts
+			echo "192.168.11.102  postgres2" >> /etc/hosts
+			echo "192.168.11.103  postgres3" >> /etc/hosts
+			echo "192.168.11.104  haproxy" >> /etc/hosts
+			echo "192.168.11.105  client" >> /etc/hosts			
+			setenforce 0
+			yum -y install https://download.postgresql.org/pub/repos/yum/reporpms/EL-7-x86_64/pgdg-redhat-repo-latest.noarch.rpm
+			yum -y install postgresql12-server postgresql12 postgresql12-devel
+			yum -y install https://github.com/cybertec-postgresql/patroni-packaging/releases/download/1.6.0-1/patroni-1.6.0-1.rhel7.x86_64.rpm
+			yum -y install etcd
+			cp /vagrant/patroni/2/postgresql.yml /opt/app/patroni/etc/postgresql.yml
+			cp -f /vagrant/etcd/2/etcd.conf /etc/etcd/etcd.conf
+			systemctl enable etcd && systemctl start etcd
+			systemctl enable patroni && systemctl start patroni
+
+            SHELL
+
+        when "postgres3"
+          box.vm.provision "shell", run: "always", inline: <<-SHELL
+            yum install epel-release -y
+			setenforce 0
+			sudo systemctl stop firewalld            
+			echo "192.168.11.101  postgres1" >> /etc/hosts
+			echo "192.168.11.102  postgres2" >> /etc/hosts
+			echo "192.168.11.103  postgres3" >> /etc/hosts
+			echo "192.168.11.104  haproxy" >> /etc/hosts
+			echo "192.168.11.105  client" >> /etc/hosts
+			yum -y install https://download.postgresql.org/pub/repos/yum/reporpms/EL-7-x86_64/pgdg-redhat-repo-latest.noarch.rpm
+			yum -y install postgresql12-server postgresql12 postgresql12-devel
+			yum -y install https://github.com/cybertec-postgresql/patroni-packaging/releases/download/1.6.0-1/patroni-1.6.0-1.rhel7.x86_64.rpm
+			yum -y install etcd
+			cp /vagrant/patroni/3/postgresql.yml /opt/app/patroni/etc/postgresql.yml
+			cp -f /vagrant/etcd/3/etcd.conf /etc/etcd/etcd.conf
+			systemctl enable etcd && systemctl start etcd
+			systemctl enable patroni && systemctl start patroni
+		    # ansible-playbook /home/vagrant/playbook.yml  -i /home/vagrant/.ansible/inventory.yml
+			# ansible-playbook /home/vagrant/backup.yml  -i /home/vagrant/.ansible/inventory.yml
+			#sudo -u postgres psql -c "CREATE DATABASE replitest2"
+			#sudo -u postgres psql -c "\l"
+            SHELL
+			
+        when "haproxy"
+          box.vm.provision "shell", run: "always", inline: <<-SHELL
+            yum install epel-release -y
+			setenforce 0
+			sudo systemctl stop firewalld            
+			echo "192.168.11.101  postgres1" >> /etc/hosts
+			echo "192.168.11.102  postgres2" >> /etc/hosts
+			echo "192.168.11.103  postgres3" >> /etc/hosts
+			echo "192.168.11.104  haproxy" >> /etc/hosts
+			echo "192.168.11.105  client" >> /etc/hosts
+			yum -y install haproxy
+			cp -f /vagrant/haproxy/haproxy.cfg /etc/haproxy/haproxy.cfg 
+			systemctl enable haproxy && systemctl start haproxy && systemctl status haproxy
+		    # ansible-playbook /home/vagrant/playbook.yml  -i /home/vagrant/.ansible/inventory.yml
+			# ansible-playbook /home/vagrant/backup.yml  -i /home/vagrant/.ansible/inventory.yml
+			#sudo -u postgres psql -c "CREATE DATABASE replitest2"
+			#sudo -u postgres psql -c "\l"
+            SHELL			
+
+        when "client"
+          box.vm.provision "shell", run: "always", inline: <<-SHELL
+            yum install epel-release -y
+			setenforce 0
+			sudo systemctl stop firewalld            
+			echo "192.168.11.101  postgres1" >> /etc/hosts
+			echo "192.168.11.102  postgres2" >> /etc/hosts
+			echo "192.168.11.103  postgres3" >> /etc/hosts
+			echo "192.168.11.104  haproxy" >> /etc/hosts
+			echo "192.168.11.105  client" >> /etc/hosts
+			yum -y install https://download.postgresql.org/pub/repos/yum/reporpms/EL-7-x86_64/pgdg-redhat-repo-latest.noarch.rpm
+			yum -y install  postgresql12 postgresql12-devel
+			#psql -p 5000 -h 192.168.11.104 -U postgres
+            SHELL
+
+			
+
+		
+			
+        end
+
+      end
+
+  end
+  
+  
+end
+
