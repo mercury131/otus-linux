@@ -71,7 +71,8 @@ Vagrant.configure("2") do |config|
 			setenforce 0
 			yum -y install https://download.postgresql.org/pub/repos/yum/reporpms/EL-7-x86_64/pgdg-redhat-repo-latest.noarch.rpm
 			yum -y install postgresql12-server postgresql12 postgresql12-devel
-			yum -y install https://github.com/cybertec-postgresql/patroni-packaging/releases/download/1.6.0-1/patroni-1.6.0-1.rhel7.x86_64.rpm
+			#yum -y install https://github.com/cybertec-postgresql/patroni-packaging/releases/download/1.6.0-1/patroni-1.6.0-1.rhel7.x86_64.rpm
+			yum -y install /vagrant/patroni-1.6.0-1.rhel7.x86_64.rpm
 			yum -y install etcd
 			cp /vagrant/patroni/1/postgresql.yml /opt/app/patroni/etc/postgresql.yml
 			cp -f /vagrant/etcd/1/etcd.conf /etc/etcd/etcd.conf
@@ -91,7 +92,8 @@ Vagrant.configure("2") do |config|
 			setenforce 0
 			yum -y install https://download.postgresql.org/pub/repos/yum/reporpms/EL-7-x86_64/pgdg-redhat-repo-latest.noarch.rpm
 			yum -y install postgresql12-server postgresql12 postgresql12-devel
-			yum -y install https://github.com/cybertec-postgresql/patroni-packaging/releases/download/1.6.0-1/patroni-1.6.0-1.rhel7.x86_64.rpm
+			#yum -y install https://github.com/cybertec-postgresql/patroni-packaging/releases/download/1.6.0-1/patroni-1.6.0-1.rhel7.x86_64.rpm
+			yum -y install /vagrant/patroni-1.6.0-1.rhel7.x86_64.rpm
 			yum -y install etcd
 			cp /vagrant/patroni/2/postgresql.yml /opt/app/patroni/etc/postgresql.yml
 			cp -f /vagrant/etcd/2/etcd.conf /etc/etcd/etcd.conf
@@ -112,16 +114,13 @@ Vagrant.configure("2") do |config|
 			echo "192.168.11.105  client" >> /etc/hosts
 			yum -y install https://download.postgresql.org/pub/repos/yum/reporpms/EL-7-x86_64/pgdg-redhat-repo-latest.noarch.rpm
 			yum -y install postgresql12-server postgresql12 postgresql12-devel
-			yum -y install https://github.com/cybertec-postgresql/patroni-packaging/releases/download/1.6.0-1/patroni-1.6.0-1.rhel7.x86_64.rpm
+			#yum -y install https://github.com/cybertec-postgresql/patroni-packaging/releases/download/1.6.0-1/patroni-1.6.0-1.rhel7.x86_64.rpm
+			yum -y install /vagrant/patroni-1.6.0-1.rhel7.x86_64.rpm
 			yum -y install etcd
 			cp /vagrant/patroni/3/postgresql.yml /opt/app/patroni/etc/postgresql.yml
 			cp -f /vagrant/etcd/3/etcd.conf /etc/etcd/etcd.conf
 			systemctl enable etcd && systemctl start etcd
 			systemctl enable patroni && systemctl start patroni
-		    # ansible-playbook /home/vagrant/playbook.yml  -i /home/vagrant/.ansible/inventory.yml
-			# ansible-playbook /home/vagrant/backup.yml  -i /home/vagrant/.ansible/inventory.yml
-			#sudo -u postgres psql -c "CREATE DATABASE replitest2"
-			#sudo -u postgres psql -c "\l"
             SHELL
 			
         when "haproxy"
@@ -137,12 +136,8 @@ Vagrant.configure("2") do |config|
 			yum -y install haproxy
 			cp -f /vagrant/haproxy/haproxy.cfg /etc/haproxy/haproxy.cfg 
 			systemctl enable haproxy && systemctl start haproxy && systemctl status haproxy
-		    # ansible-playbook /home/vagrant/playbook.yml  -i /home/vagrant/.ansible/inventory.yml
-			# ansible-playbook /home/vagrant/backup.yml  -i /home/vagrant/.ansible/inventory.yml
-			#sudo -u postgres psql -c "CREATE DATABASE replitest2"
-			#sudo -u postgres psql -c "\l"
-            SHELL			
-
+            SHELL
+			
         when "client"
           box.vm.provision "shell", run: "always", inline: <<-SHELL
             yum install epel-release -y
