@@ -19,15 +19,15 @@
     
     - name: Enable Nginx firewall rule
       firewalld:
-      service: https
-      permanent: yes
-      state: enabled  
+        service: https
+        permanent: yes
+        state: enabled  
 
     - name: Enable Nginx firewall rule
       firewalld:
-      service: http
-      permanent: yes
-      state: enabled  
+        service: http
+        permanent: yes
+        state: enabled  
 
     - name: Add NGINX cofig
       when: nginxenabled is succeeded
