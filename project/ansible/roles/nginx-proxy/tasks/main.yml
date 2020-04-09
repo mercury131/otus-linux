@@ -1,4 +1,8 @@
 ---
+    - name: Set fact
+      set_fact:
+        port: "{{ port }}" 
+        
     - name: Add Nginx Repository
       copy: src=nginx.repo dest=/etc/yum.repos.d/ owner=root group=root
       register: nginx_repo
@@ -36,3 +40,4 @@
     - name: Copy custom page
       copy: src=index.html dest=/usr/share/nginx/html/index.html owner=nginx group=nginx
       register: nginx_page
+
