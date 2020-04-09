@@ -1,8 +1,7 @@
 ---
- - hosts: web
+ - hosts: proxy
    become: true
    tasks:
    - include_role:
-        name: my-nginx
-     vars:
-       port: 8080
+        name: nginx-proxy
+
