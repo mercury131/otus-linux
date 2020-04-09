@@ -1,0 +1,8 @@
+---
+ - hosts: web
+   become: true
+   tasks:
+   - include_role:
+        name: my-nginx
+     vars:
+       port: 8080

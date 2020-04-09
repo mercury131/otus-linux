@@ -1,0 +1,71 @@
+---
+    - name: Add Nginx Repository
+      copy: src=nginx.repo dest=/etc/yum.repos.d/ owner=root group=root
+      register: nginx_repo
+      
+    - name: Install Nginx
+      yum: pkg=nginx state=latest
+      when: nginx_repo is succeeded
+      register: nginxinstalled
+      notify:
+          - nginx start
+          
+    - name: Add Laravel Nginx config
+      copy: src=laravel.conf dest=/etc/nginx/conf.d/laravel.conf owner=nginx group=nginx        
+
+    - name: Install git
+      yum: pkg=git state=latest
+
+    - name: Enable Nginx Service
+      service:
+        name: nginx
+        enabled: yes
+      when: nginxinstalled is succeeded
+      register: nginxenabled
+      
+    - name: install php72 repo
+      command: 
+        cmd: yum install -y http://rpms.remirepo.net/enterprise/remi-release-7.rpm 
+        warn: no
+      ignore_errors: True
+      
+    - name: install php72 
+      command: 
+        cmd: yum install -y php72 php72-php-fpm php72-php-gd php72-php-json php72-php-mbstring php72-php-mysqlnd php72-php-xml php72-php-xmlrpc php72-php-opcache
+        warn: no
+      ignore_errors: True
+      
+    - name: create php symlink
+      command: 
+        cmd: ln -s /usr/bin/php72 /usr/bin/php
+        warn: no
+      ignore_errors: True
+      
+
+
+    - name: Add PHP-FPM pool cofig
+      when: nginxenabled is succeeded
+      copy: src=www.conf dest=/etc/opt/remi/php72/php-fpm.d/www.conf owner=nginx group=nginx
+      notify:
+          - php-fpm start
+          
+    - name: create www dir
+      command: mkdir -p /var/www/      
+
+    - name: setup SElinux
+      command: chcon -R -t httpd_sys_rw_content_t /var/www/
+      
+    - name: install composer
+      shell: curl -sS https://getcomposer.org/installer | php && mv composer.phar /usr/bin/composer && chmod +x /usr/bin/composer
+
+    - name: install laravel
+      shell: cd /var/www && git clone https://github.com/laravel/laravel.git && chown -R nginx:nginx /var/www/laravel && chmod -R 755 /var/www/ && cd laravel && export HTTPS_PROXY_REQUEST_FULLURI=false && composer update --no-scripts && composer install
+      
+    - name: set permissions
+      shell: chown -R nginx:nginx /var/www/laravel && chmod -R 755 /var/www/ 
+      
+    - name: Create Laravel ENV and setup key
+      shell: cd /var/www/laravel && cp .env.example .env && php artisan key:generate
+      
+    - name: restart nginx
+      command: systemctl restart nginx
