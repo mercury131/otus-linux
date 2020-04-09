@@ -1,2 +1,10 @@
-[web]
-web ansible_user=root
+[proxy]
+proxy1 ansible_user=root
+proxy2 ansible_user=root
+
+[proxy:vars]
+port=80
+upstreamname=myapp
+method=ip_hash
+server_name=example.com
+backends='["server1", "server2", "server3"]'

@@ -1,0 +1,9 @@
+---
+    port: 80
+    upstreamname: myapp
+    method: ip_hash
+    server_name: example.com
+    backends: 
+          - backend: server1
+          - backend: server2
+          - backend: server3
