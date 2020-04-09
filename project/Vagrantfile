@@ -3,9 +3,59 @@
 home = ENV['HOME']
 
 MACHINES = {
-  :web => {
+  :client => {
+        :box_name => "cdaf/CentOSLVM",
+        :ip_addr => '192.168.11.101',
+  },
+
+  :proxy1 => {
         :box_name => "cdaf/CentOSLVM",
         :ip_addr => '192.168.11.102',
+  },
+
+  :proxy2 => {
+        :box_name => "cdaf/CentOSLVM",
+        :ip_addr => '192.168.11.103',
+  },
+
+  :nginx1 => {
+        :box_name => "cdaf/CentOSLVM",
+        :ip_addr => '192.168.11.104',
+  },
+
+  :nginx2 => {
+        :box_name => "cdaf/CentOSLVM",
+        :ip_addr => '192.168.11.105',
+  },
+
+  :haproxy1 => {
+        :box_name => "cdaf/CentOSLVM",
+        :ip_addr => '192.168.11.106',
+  },
+
+  :haproxy2 => {
+        :box_name => "cdaf/CentOSLVM",
+        :ip_addr => '192.168.11.107',
+  },
+
+  :patroni1 => {
+        :box_name => "cdaf/CentOSLVM",
+        :ip_addr => '192.168.11.108',
+  },
+
+  :patroni2 => {
+        :box_name => "cdaf/CentOSLVM",
+        :ip_addr => '192.168.11.109',
+  },
+
+  :patroni3 => {
+        :box_name => "cdaf/CentOSLVM",
+        :ip_addr => '192.168.11.110',
+  },
+
+  :backup => {
+        :box_name => "cdaf/CentOSLVM",
+        :ip_addr => '192.168.11.111',
   },
   
 }
@@ -24,30 +74,37 @@ Vagrant.configure("2") do |config|
           box.vm.network "private_network", ip: boxconfig[:ip_addr]
 
           box.vm.provider :virtualbox do |vb|
-          vb.customize ["modifyvm", :id, "--memory", "2048","--cpus", "4"]
-        #   vb.customize ["storagectl", :id, "--name", "SATA", "--add", "sata" ]
+          vb.customize ["modifyvm", :id, "--memory", "512","--cpus", "1"]
+
           vb.name = boxname.to_s
 
-        #   boxconfig[:disks].each do |dname, dconf|
-        #       unless File.exist?(dconf[:dfile])
-        #         vb.customize ['createhd', '--filename', dconf[:dfile], '--variant', 'Fixed', '--size', dconf[:size]]
-        #       end
-        #       vb.customize ['storageattach', :id,  '--storagectl', 'SATA', '--port', dconf[:port], '--device', 0, '--type', 'hdd', '--medium', dconf[:dfile]]
-        # end
+
           end
       box.vm.provision "shell", inline: <<-SHELL
           mkdir -p ~root/.ssh
           cp ~vagrant/.ssh/auth* ~root/.ssh
+          echo "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDQulD+SK4ggadzuJZdksaB7VVAXzDbeYHkd41savMnzxLiVXW4SFUXlBx4c1B8J4thzlgH/dXiDKgyPsjPPiHJaao446jJrJxBT/VATUg+MEYY48qUifCg9cTffAis512MhyvCGInfU2B/FMCz8zF9P0sDp+NoHWOCamawJ+B2Sk3r9VgtS30l34WTDBINbcqtlEq1IKTWHHLuDw84bRLHBF4x8bn6REYjb+UF98zHlhV539iikHjZSqQa1KHnp+1Ew9IY1WoUDukjwuAa6YGkWjO1ughAlZ4xpzgp1coOp+C0tTTI4V45soO2V2fG1xXIBqGteYv/oBDDZfQ6kj3z" >> /home/vagrant/.ssh/authorized_keys		
+          echo "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDQulD+SK4ggadzuJZdksaB7VVAXzDbeYHkd41savMnzxLiVXW4SFUXlBx4c1B8J4thzlgH/dXiDKgyPsjPPiHJaao446jJrJxBT/VATUg+MEYY48qUifCg9cTffAis512MhyvCGInfU2B/FMCz8zF9P0sDp+NoHWOCamawJ+B2Sk3r9VgtS30l34WTDBINbcqtlEq1IKTWHHLuDw84bRLHBF4x8bn6REYjb+UF98zHlhV539iikHjZSqQa1KHnp+1Ew9IY1WoUDukjwuAa6YGkWjO1ughAlZ4xpzgp1coOp+C0tTTI4V45soO2V2fG1xXIBqGteYv/oBDDZfQ6kj3z" >> /root/.ssh/authorized_keys
+          echo "192.168.11.102  proxy1" >> /etc/hosts
+          echo "192.168.11.103  proxy2" >> /etc/hosts
+          echo "192.168.11.104  nginx1" >> /etc/hosts
+          echo "192.168.11.105  nginx2" >> /etc/hosts
+          echo "192.168.11.106  haproxy1" >> /etc/hosts
+          echo "192.168.11.107  haproxy2" >> /etc/hosts
+          echo "192.168.11.108  patroni1" >> /etc/hosts
+          echo "192.168.11.109  patroni2" >> /etc/hosts
+          echo "192.168.11.110  patroni3" >> /etc/hosts
+          echo "192.168.11.111  backup" >> /etc/hosts
       SHELL
 
       case boxname.to_s
-      when "web"
+      when "backup"
         box.vm.provision "shell", run: "always", inline: <<-SHELL
           echo "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDQulD+SK4ggadzuJZdksaB7VVAXzDbeYHkd41savMnzxLiVXW4SFUXlBx4c1B8J4thzlgH/dXiDKgyPsjPPiHJaao446jJrJxBT/VATUg+MEYY48qUifCg9cTffAis512MhyvCGInfU2B/FMCz8zF9P0sDp+NoHWOCamawJ+B2Sk3r9VgtS30l34WTDBINbcqtlEq1IKTWHHLuDw84bRLHBF4x8bn6REYjb+UF98zHlhV539iikHjZSqQa1KHnp+1Ew9IY1WoUDukjwuAa6YGkWjO1ughAlZ4xpzgp1coOp+C0tTTI4V45soO2V2fG1xXIBqGteYv/oBDDZfQ6kj3z" >> /home/vagrant/.ssh/authorized_keys		
 		  mkdir /root/.ssh/
 		  echo "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDQulD+SK4ggadzuJZdksaB7VVAXzDbeYHkd41savMnzxLiVXW4SFUXlBx4c1B8J4thzlgH/dXiDKgyPsjPPiHJaao446jJrJxBT/VATUg+MEYY48qUifCg9cTffAis512MhyvCGInfU2B/FMCz8zF9P0sDp+NoHWOCamawJ+B2Sk3r9VgtS30l34WTDBINbcqtlEq1IKTWHHLuDw84bRLHBF4x8bn6REYjb+UF98zHlhV539iikHjZSqQa1KHnp+1Ew9IY1WoUDukjwuAa6YGkWjO1ughAlZ4xpzgp1coOp+C0tTTI4V45soO2V2fG1xXIBqGteYv/oBDDZfQ6kj3z" >> /root/.ssh/authorized_keys
-		  sudo systemctl stop firewalld
-		  setenforce 0
+		  #sudo systemctl stop firewalld
+		  #setenforce 0
           yum install epel-release -y
           yum install ansible vim -y
           cp /vagrant/id_rsa /home/vagrant/.ssh/
