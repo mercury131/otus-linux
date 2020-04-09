@@ -40,3 +40,6 @@
 | https://github.com/mercury131/otus-linux/tree/master/lesson29 | Mysql
 | https://github.com/mercury131/otus-linux/tree/master/lesson30 | Почтовые сервера. Postfix,Dovecot
 | https://github.com/mercury131/otus-linux/tree/master/lesson31 | MySQL - бэкап, репликация, кластер (InnoDB cluster in Docker Swarm)
+| https://github.com/mercury131/otus-linux/tree/master/lesson32 | PostgreSQL / Barman
+| https://github.com/mercury131/otus-linux/tree/master/lesson33 | PostgreSQL Cluster Patroni
+| https://github.com/mercury131/otus-linux/tree/master/lesson36 | NFS, Samba / NFS + Kerberos
