@@ -4,4 +4,12 @@
    tasks:
    - include_role:
         name: nginx-proxy
-
+     vars:
+       port: 80
+       upstreamname: myapp
+       method: ip_hash
+       server_name: example.com
+       backends:
+        - server1
+        - server2
+        - server3
