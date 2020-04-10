@@ -21,12 +21,14 @@
       firewalld:
         service: https
         permanent: yes
+        immediate: yes
         state: enabled  
 
     - name: Enable Nginx firewall rule
       firewalld:
         service: http
         permanent: yes
+        immediate: yes
         state: enabled  
 
     - name: Add NGINX cofig
