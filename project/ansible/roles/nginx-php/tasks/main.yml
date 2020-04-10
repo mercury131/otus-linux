@@ -20,9 +20,8 @@
       service:
         name: nginx
         enabled: yes
-      when: nginxinstalled is succeeded
-      register: nginxenabled
 
+    - name: Enable Nginx firewall rule
       firewalld:
         service: https
         permanent: yes
@@ -57,10 +56,16 @@
 
 
     - name: Add PHP-FPM pool cofig
-      when: nginxenabled is succeeded
       copy: src=www.conf dest=/etc/opt/remi/php72/php-fpm.d/www.conf owner=nginx group=nginx
       notify:
           - php-fpm start
+      ignore_errors: True
+
+
+    - name: Enable Nginx Service
+      service:
+        name: php72-php-fpm
+        enabled: yes
           
     - name: create www dir
       command: mkdir -p /var/www/      
@@ -68,17 +73,11 @@
     - name: setup SElinux
       command: chcon -R -t httpd_sys_rw_content_t /var/www/
       
-    - name: install composer
-      shell: curl -sS https://getcomposer.org/installer | php && mv composer.phar /usr/bin/composer && chmod +x /usr/bin/composer
-
-    - name: install laravel
-      shell: cd /var/www && git clone https://github.com/laravel/laravel.git && chown -R nginx:nginx /var/www/laravel && chmod -R 755 /var/www/ && cd laravel && export HTTPS_PROXY_REQUEST_FULLURI=false && composer update --no-scripts && composer install
-      
     - name: set permissions
-      shell: chown -R nginx:nginx /var/www/laravel && chmod -R 755 /var/www/ 
+      shell: chown -R nginx:nginx /var/www/ && chmod -R 755 /var/www/ 
       
-    - name: Create Laravel ENV and setup key
-      shell: cd /var/www/laravel && cp .env.example .env && php artisan key:generate
-      
+    - name: Copy test php file
+      copy: src=index.php dest=/var/www/index.php owner=nginx group=nginx
+
     - name: restart nginx
       command: systemctl restart nginx
