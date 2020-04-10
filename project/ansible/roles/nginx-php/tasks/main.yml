@@ -68,16 +68,16 @@
         enabled: yes
           
     - name: create www dir
-      command: mkdir -p /var/www/      
+      command: mkdir -p {{ root }}     
 
     - name: setup SElinux
-      command: chcon -R -t httpd_sys_rw_content_t /var/www/
+      command: chcon -R -t httpd_sys_rw_content_t {{ root }}
       
     - name: set permissions
-      shell: chown -R nginx:nginx /var/www/ && chmod -R 755 /var/www/ 
+      shell: chown -R nginx:nginx {{ root }} && chmod -R 755 {{ root }}
       
     - name: Copy test php file
-      copy: src=index.php dest=/var/www/index.php owner=nginx group=nginx
+      copy: src=index.php dest={{ root }}index.php owner=nginx group=nginx
 
     - name: restart nginx
       command: systemctl restart nginx

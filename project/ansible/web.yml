@@ -7,7 +7,7 @@
      vars:
        port: 80
        server_name: example.com
-       root: /var/www/laravel/public
+       root: /var/www/
        max_fails: 1
        weight: 5
        backends:
