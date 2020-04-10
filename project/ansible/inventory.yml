@@ -1,5 +1,5 @@
 [proxy]
-proxy1 ansible_user=root
+proxy1 ansible_user=root priority=102
 proxy2 ansible_user=root
 
 [web]

@@ -1,5 +1,4 @@
 ---
-    port: 8080
     notification_email: test@local
     notification_email_from: admin@local
     smtp_server: 127.0.0.1
@@ -12,11 +11,3 @@
     auth_type: PASS
     auth_pass: 1111
     virtual_ipaddress: 192.168.116.50/24
-    backends: 
-          - server01
-          - server02
-          - server03
-    proxy_set_headers: 
-          - Host $host
-          - X-Real-IP $remote_addr
-          - X-Forwarded-For $proxy_add_x_forwarded_for

@@ -11,25 +11,17 @@
         enabled: yes
 
     
-    - name: Enable Nginx firewall rule
-      firewalld:
-        service: https
-        permanent: yes
-        immediate: yes
-        state: enabled  
-
-    - name: Enable Nginx firewall rule
+    - name: Enable vrrp firewall rule
       firewalld:
         service: http
         permanent: yes
         immediate: yes
         state: enabled  
 
-    - name: Add NGINX cofig
-      when: nginxenabled is succeeded
-      template: src=default.conf dest=/etc/nginx/conf.d/default.conf owner=nginx group=nginx
+    - name: Add keepalived cofig
+      template: src=keepalived.conf dest=/etc/keepalived/keepalived.conf
       notify:
-          - nginx restart
+          - keepalived  restart
 
 
 
