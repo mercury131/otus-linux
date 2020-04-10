@@ -1,0 +1,35 @@
+---      
+    
+    - name: Install keepalived
+      yum: pkg=keepalived state=latest
+      notify:
+          - keepalived start
+          
+    - name: Enable keepalived  Service
+      service:
+        name: keepalived 
+        enabled: yes
+
+    
+    - name: Enable Nginx firewall rule
+      firewalld:
+        service: https
+        permanent: yes
+        immediate: yes
+        state: enabled  
+
+    - name: Enable Nginx firewall rule
+      firewalld:
+        service: http
+        permanent: yes
+        immediate: yes
+        state: enabled  
+
+    - name: Add NGINX cofig
+      when: nginxenabled is succeeded
+      template: src=default.conf dest=/etc/nginx/conf.d/default.conf owner=nginx group=nginx
+      notify:
+          - nginx restart
+
+
+
