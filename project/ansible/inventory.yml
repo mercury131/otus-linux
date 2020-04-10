@@ -2,6 +2,10 @@
 proxy1 ansible_user=root
 proxy2 ansible_user=root
 
+[web]
+nginx1 ansible_user=root
+nginx2 ansible_user=root
+
 [proxy:vars]
 port=80
 upstreamname=myapp

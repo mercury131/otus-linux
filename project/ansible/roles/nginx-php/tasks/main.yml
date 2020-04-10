@@ -10,26 +10,73 @@
       notify:
           - nginx start
           
+    - name: Add Laravel Nginx config
+      template: src=site.conf dest=/etc/nginx/conf.d/site.conf owner=nginx group=nginx        
+
+    - name: Install git
+      yum: pkg=git state=latest
+
     - name: Enable Nginx Service
       service:
         name: nginx
         enabled: yes
       when: nginxinstalled is succeeded
       register: nginxenabled
+
+      firewalld:
+        service: https
+        permanent: yes
+        state: enabled  
+
+    - name: Enable Nginx firewall rule
+      firewalld:
+        service: http
+        permanent: yes
+        state: enabled  
       
     - name: install php72 repo
-      command: yum install -y http://rpms.remirepo.net/enterprise/remi-release-7.rpm 
+      command: 
+        cmd: yum install -y http://rpms.remirepo.net/enterprise/remi-release-7.rpm 
+        warn: no
+      ignore_errors: True
       
     - name: install php72 
-      command: yum install -y php72 php72-php-fpm php72-php-gd php72-php-json php72-php-mbstring php72-php-mysqlnd php72-php-xml php72-php-xmlrpc php72-php-opcache
+      command: 
+        cmd: yum install -y php72 php72-php-fpm php72-php-gd php72-php-json php72-php-mbstring php72-php-mysqlnd php72-php-xml php72-php-xmlrpc php72-php-opcache
+        warn: no
+      ignore_errors: True
       
     - name: create php symlink
-      command: ln -s /usr/bin/php72 /usr/bin/php
+      command: 
+        cmd: ln -s /usr/bin/php72 /usr/bin/php
+        warn: no
+      ignore_errors: True
+      
 
-    - name: Add NGINX cofig
+
+    - name: Add PHP-FPM pool cofig
       when: nginxenabled is succeeded
-      template: src=default.conf dest=/etc/nginx/conf.d/default.conf owner=nginx group=nginx
+      copy: src=www.conf dest=/etc/opt/remi/php72/php-fpm.d/www.conf owner=nginx group=nginx
+      notify:
+          - php-fpm start
+          
+    - name: create www dir
+      command: mkdir -p /var/www/      
 
-    - name: Copy custom page
-      copy: src=index.html dest=/usr/share/nginx/html/index.html owner=nginx group=nginx
-      register: nginx_page
+    - name: setup SElinux
+      command: chcon -R -t httpd_sys_rw_content_t /var/www/
+      
+    - name: install composer
+      shell: curl -sS https://getcomposer.org/installer | php && mv composer.phar /usr/bin/composer && chmod +x /usr/bin/composer
+
+    - name: install laravel
+      shell: cd /var/www && git clone https://github.com/laravel/laravel.git && chown -R nginx:nginx /var/www/laravel && chmod -R 755 /var/www/ && cd laravel && export HTTPS_PROXY_REQUEST_FULLURI=false && composer update --no-scripts && composer install
+      
+    - name: set permissions
+      shell: chown -R nginx:nginx /var/www/laravel && chmod -R 755 /var/www/ 
+      
+    - name: Create Laravel ENV and setup key
+      shell: cd /var/www/laravel && cp .env.example .env && php artisan key:generate
+      
+    - name: restart nginx
+      command: systemctl restart nginx

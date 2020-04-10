@@ -1,15 +1,13 @@
 ---
- - hosts: proxy
+ - hosts: web
    become: true
    tasks:
    - include_role:
-        name: nginx-proxy
+        name: nginx-php
      vars:
        port: 80
-       upstreamname: myapp
-       method: ip_hash
        server_name: example.com
-       fail_timeout: 10s
+       root: /var/www/laravel/public
        max_fails: 1
        weight: 5
        backends:

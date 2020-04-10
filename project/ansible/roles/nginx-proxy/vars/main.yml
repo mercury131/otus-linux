@@ -3,7 +3,14 @@
     upstreamname: myapp
     method: ip_hash
     server_name: example.com
+    location: /
+    fail_timeout: 10s
+    max_fails: 1
     backends: 
           - server01
           - server02
           - server03
+    proxy_set_headers: 
+          - Host $host
+          - X-Real-IP $remote_addr
+          - X-Forwarded-For $proxy_add_x_forwarded_for
