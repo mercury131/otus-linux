@@ -14,13 +14,6 @@
         state: started
 
     
-    - name: Enable vrrp firewall rule
-      firewalld:
-        service: http
-        permanent: yes
-        immediate: yes
-        state: enabled  
-
     - name: Add keepalived cofig
       template: src=keepalived.conf dest=/etc/keepalived/keepalived.conf
 
