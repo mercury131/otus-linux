@@ -3,8 +3,8 @@ proxy1 ansible_user=root priority=102
 proxy2 ansible_user=root priority=100
 
 [web]
-nginx1 ansible_user=root
-nginx2 ansible_user=root
+nginx1 ansible_user=root role=master
+nginx2 ansible_user=root role=secondary
 
 [proxy:vars]
 port=80

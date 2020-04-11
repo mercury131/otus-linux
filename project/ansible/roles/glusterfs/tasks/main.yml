@@ -1,0 +1,96 @@
+---
+      
+    - name: Install centos release gluster37 
+      yum: pkg=centos-release-gluster37  state=latest
+
+    - name: Install GlusterFS packages
+      yum:
+        name:
+          - glusterfs
+          - gluster-cli
+          - glusterfs-libs
+          - glusterfs-server
+        state: present
+
+    - name: Enable GlusterFS Service
+      service:
+        name: glusterd
+        enabled: yes
+
+    - name: Start GlusterFS Service
+      service:
+        name: glusterd
+        started: yes
+
+    - name: Add GlusterFS Firewall rules
+      firewalld:
+        port: 24007-24009/tcp
+        permanent: yes
+        immediate: yes
+        state: enabled
+
+    - name: Add GlusterFS client Firewall rules
+      firewalld:
+        service: "{{ item }}"
+        permanent: yes
+        immediate: yes
+        state: enable
+      loop:
+        - nfs
+        - samba
+        - samba-client
+
+    - name: Add GlusterFS client Firewall rules
+      firewalld:
+        port: "{{ item }}"
+        permanent: yes
+        immediate: yes
+        state: enabled
+      loop:
+        - 38465-38469/tcp
+        - 49152-49251/tcp
+        - 631/tcp
+
+    - name: Peer Secondary
+      shell: gluster peer probe "{{ secondary }}"
+
+    - name: Create a directory for GlusterFS
+      file:
+        path: "{{ glusterdir }}"
+        state: directory
+        mode: "{{ permissions }}"     
+
+    - name: Create a replicated GlusterFS Volume
+      shell: gluster volume create "{{ glustervolname }}" replica "{{ replicacount }}" transport tcp "{{ primary }}":"{{ glusterdir }}" "{{ secondary }}":"{{ glusterdir }}"
+    when: role == "master"
+
+    - name: Install GlusterFS client packages
+      yum:
+        name:
+          - glusterfs
+          - glusterfs-fuse
+        state: present
+
+    - name: Create a directory for GlusterFS mount point
+      file:
+        path: "{{ glustermountdir }}"
+        state: directory
+        mode: "{{ mntpermissions }}"
+
+    - name: Mount GlusterFS Volume
+      mount:
+        path: "{{ glustermountdir }}"
+        src: "{{ primary }}":/"{{ glustervolname }}"
+        fstype: glusterfs
+        opts: _netdev,backupvolfile-server="{{ secondary }}"
+        state: present
+    when: role == "master"
+
+    - name: Mount GlusterFS Volume
+      mount:
+        path: "{{ glustermountdir }}"
+        src: "{{ primary }}":/"{{ glustervolname }}"
+        fstype: glusterfs
+        opts: _netdev,backupvolfile-server="{{ primary }}"
+        state: present
+    when: role == "secondary"
