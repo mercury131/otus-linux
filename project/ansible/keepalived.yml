@@ -7,7 +7,7 @@
      vars:
        interface: enp0s8
        virtual_router_id: 55
-       priority: 100
+       #priority: "{{ priority }}"
        advert_int: 1
        auth_type: PASS
        auth_pass: Secret

@@ -2,13 +2,15 @@
     
     - name: Install keepalived
       yum: pkg=keepalived state=latest
-      notify:
-          - keepalived start
           
     - name: Enable keepalived  Service
       service:
         name: keepalived 
         enabled: yes
+
+    - name: Start keepalived  Service
+      service:
+        name: keepalived 
         state: started
 
     
@@ -22,10 +24,9 @@
     - name: Add keepalived cofig
       template: src=keepalived.conf dest=/etc/keepalived/keepalived.conf
 
-    - name: restart keepalived  Service
+    - name: Restart keepalived  Service
       service:
         name: keepalived 
-        enabled: yes
         state: restarted
 
 
