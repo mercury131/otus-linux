@@ -62,7 +62,7 @@
 
     - name: Create a replicated GlusterFS Volume
       shell: gluster volume create "{{ glustervolname }}" replica "{{ replicacount }}" transport tcp "{{ primary }}":"{{ glusterdir }}" "{{ secondary }}":"{{ glusterdir }}"
-    when: role == "master"
+      when: role == "master"
 
     - name: Install GlusterFS client packages
       yum:
@@ -80,17 +80,17 @@
     - name: Mount GlusterFS Volume
       mount:
         path: "{{ glustermountdir }}"
-        src: "{{ primary }}":/"{{ glustervolname }}"
+        src: "{{ primary }}:/{{ glustervolname }}"
         fstype: glusterfs
         opts: _netdev,backupvolfile-server="{{ secondary }}"
         state: present
-    when: role == "master"
+      when: role == "master"
 
     - name: Mount GlusterFS Volume
       mount:
         path: "{{ glustermountdir }}"
-        src: "{{ primary }}":/"{{ glustervolname }}"
+        src: "{{ primary }}:/{{ glustervolname }}"
         fstype: glusterfs
         opts: _netdev,backupvolfile-server="{{ primary }}"
         state: present
-    when: role == "secondary"
+      when: role == "secondary"
