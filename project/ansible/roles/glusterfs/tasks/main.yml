@@ -60,7 +60,11 @@
         mode: "{{ permissions }}"     
 
     - name: Create a replicated GlusterFS Volume
-      shell: gluster volume create "{{ glustervolname }}" replica "{{ replicacount }}" transport tcp "{{ primary }}":"{{ glusterdir }}" "{{ secondary }}":"{{ glusterdir }}"
+      shell: gluster volume create "{{ glustervolname }}" replica "{{ replicacount }}" transport tcp "{{ primary }}":"{{ glusterdir }}" "{{ secondary }}":"{{ glusterdir }}" force
+      when: role == "master"
+
+    - name: Create a replicated GlusterFS Volume
+      shell: gluster volume start "{{ glustervolname }}" 
       when: role == "master"
 
     - name: Install GlusterFS client packages
