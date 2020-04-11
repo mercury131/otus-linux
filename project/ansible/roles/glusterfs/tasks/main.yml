@@ -1,13 +1,12 @@
 ---
       
-    - name: Install centos release gluster37 
-      yum: pkg=centos-release-gluster37  state=latest
+    - name: Install centos release gluster
+      yum: pkg="{{ glustersigpackage }}"  state=latest
 
     - name: Install GlusterFS packages
       yum:
         name:
           - glusterfs
-          - gluster-cli
           - glusterfs-libs
           - glusterfs-server
         state: present
@@ -20,7 +19,7 @@
     - name: Start GlusterFS Service
       service:
         name: glusterd
-        started: yes
+        state: started
 
     - name: Add GlusterFS Firewall rules
       firewalld:
@@ -34,7 +33,7 @@
         service: "{{ item }}"
         permanent: yes
         immediate: yes
-        state: enable
+        state: enabled
       loop:
         - nfs
         - samba

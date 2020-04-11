@@ -13,5 +13,6 @@
        replicacount: 2
        glustermountdir: /glusterfs
        mntpermissions: '0755'
+       glustersigpackage: centos-release-gluster7
 
 
