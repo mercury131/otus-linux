@@ -10,7 +10,7 @@
        method: ip_hash
        server_name: example.com
        location: /
-       fail_timeout: 10s
+       fail_timeout: 2s
        max_fails: 1
        weight: 5
        backends:
