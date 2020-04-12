@@ -89,7 +89,7 @@
         state: present
       when: role == "master"
 
-    - name: Mount GlusterFS Volume
+    - name: Create GlusterFS mount point
       mount:
         path: "{{ glustermountdir }}"
         src: "{{ primary }}:/{{ glustervolname }}"
@@ -97,3 +97,11 @@
         opts: _netdev,backupvolfile-server="{{ primary }}"
         state: present
       when: role == "secondary"
+
+    - name: Mount GlusterFS Volume
+      mount:
+        path: "{{ glustermountdir }}"
+        src: "{{ primary }}:/{{ glustervolname }}"
+        fstype: glusterfs
+        opts: _netdev,backupvolfile-server="{{ primary }}"
+        state: mounted
