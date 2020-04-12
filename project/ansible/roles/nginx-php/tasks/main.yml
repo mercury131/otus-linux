@@ -10,11 +10,8 @@
       notify:
           - nginx start
           
-    - name: Add Laravel Nginx config
+    - name: Add Nginx config
       template: src=site.conf dest=/etc/nginx/conf.d/site.conf owner=nginx group=nginx        
-
-    - name: Install git
-      yum: pkg=git state=latest
 
     - name: Enable Nginx Service
       service:
@@ -54,7 +51,7 @@
       ignore_errors: True
       
     - name: Add PHP.INI  cofig
-      template: template=php.ini dest=/etc/opt/remi/php72/php.ini
+      template: src=template=php.ini dest=/etc/opt/remi/php72/php.ini
 
     - name: Add PHP-FPM pool cofig
       copy: src=www.conf dest=/etc/opt/remi/php72/php-fpm.d/www.conf owner=nginx group=nginx
