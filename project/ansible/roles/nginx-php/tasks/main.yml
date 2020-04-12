@@ -53,7 +53,8 @@
         warn: no
       ignore_errors: True
       
-
+    - name: Add PHP.INI  cofig
+      template: template=php.ini dest=/etc/opt/remi/php72/php.ini
 
     - name: Add PHP-FPM pool cofig
       copy: src=www.conf dest=/etc/opt/remi/php72/php-fpm.d/www.conf owner=nginx group=nginx
