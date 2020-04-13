@@ -6,7 +6,7 @@
         name: nextcloud-nginx
      vars:
        nextcloud_url: nextcloud-18.0.3.zip
-       #testfile:
+       port: 80
        server_name: example.com
        root: /var/www/nextcloud
        datacloud: /glusterfs/data/

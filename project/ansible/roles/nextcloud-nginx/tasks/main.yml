@@ -9,13 +9,14 @@
       yum: pkg=unzip state=latest
 
     - name: unzip nextcloud archive
-      shell: cd /tmp/ && unzip "/tmp/{{ nextcloud_url }}"
+      shell: cd /tmp/ && unzip -o "/tmp/{{ nextcloud_url }}"
 
     - name: copy nextcloud files
-      command: cp -r /tmp/nextcloud /var/www/
+      command: cp -rf /tmp/nextcloud /var/www/
 
     - name: create nextcloud data dir
       shell: mkdir "{{ datacloud }}" && chown -R nginx:nginx "{{ datacloud }}" && ln -s "{{ datacloud }}" /var/www/nextcloud/data
+      ignore_errors: True
 
     - name: Install semanage
       yum: pkg=policycoreutils-python state=latest
