@@ -27,13 +27,13 @@
     - name: setup SElinux
       command: "{{ item }}"
       loop:
-        - semanage fcontext -a -t httpd_sys_rw_content_t '/var/www/html/nextcloud/data(/.*)?'
-        - semanage fcontext -a -t httpd_sys_rw_content_t '/var/www/html/nextcloud/config(/.*)?'
-        - semanage fcontext -a -t httpd_sys_rw_content_t '/var/www/html/nextcloud/apps(/.*)?'
-        - semanage fcontext -a -t httpd_sys_rw_content_t '/var/www/html/nextcloud/.htaccess'
-        - semanage fcontext -a -t httpd_sys_rw_content_t '/var/www/html/nextcloud/.user.ini'
-        - semanage fcontext -a -t httpd_sys_rw_content_t '/var/www/html/nextcloud/3rdparty/aws/aws-sdk-php/src/data/logs(/.*)?'
-        - restorecon -R '/var/www/html/nextcloud/'
+        - semanage fcontext -a -t httpd_sys_rw_content_t '/var/www/nextcloud/data(/.*)?'
+        - semanage fcontext -a -t httpd_sys_rw_content_t '/var/www/nextcloud/config(/.*)?'
+        - semanage fcontext -a -t httpd_sys_rw_content_t '/var/www/nextcloud/apps(/.*)?'
+        - semanage fcontext -a -t httpd_sys_rw_content_t '/var/www/nextcloud/.htaccess'
+        - semanage fcontext -a -t httpd_sys_rw_content_t '/var/www/nextcloud/.user.ini'
+        - semanage fcontext -a -t httpd_sys_rw_content_t '/var/www/nextcloud/3rdparty/aws/aws-sdk-php/src/data/logs(/.*)?'
+        - restorecon -R '/var/www/nextcloud/'
         - setsebool -P httpd_can_network_connect on
       ignore_errors: True        
 
