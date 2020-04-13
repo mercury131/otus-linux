@@ -5,10 +5,11 @@
         url: "https://download.nextcloud.com/server/releases/{{ nextcloud_url }}"
         dest: /tmp/
 
-    - name: Unarchive nextcloud archive
-      unarchive:
-        src: "/tmp/{{ nextcloud_url }}"
-        dest: /tmp/
+    - name: Install unzip
+      yum: pkg=unzip state=latest
+
+    - name: unzip nextcloud archive
+      shell: cd /tmp/ && unzip "/tmp/{{ nextcloud_url }}"
 
     - name: copy nextcloud files
       command: cp -r /tmp/nextcloud /var/www/
