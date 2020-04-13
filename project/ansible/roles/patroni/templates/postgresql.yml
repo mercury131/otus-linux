@@ -7,9 +7,9 @@ restapi:
     connect_address: {{ int }}:8008
 
 etcd:
-    {% for etc in etcd %}
+{% for etc in etcd %}
     host: {{ etc }}
-    {% endfor %}
+{% endfor %}
 
 bootstrap:
   dcs:
@@ -28,20 +28,20 @@ bootstrap:
 
   pg_hba:
   - host replication replicator 127.0.0.1/32 md5
-  {% for pghost in pg_hba %}
-  {{ pghost }}
-  {% endfor %}
+{% for pghost in pg_hba %}
+  - {{ pghost }}
+{% endfor %}
   - host all all 0.0.0.0/0 md5
 
   users:
-  {% for user in users|dict2items %}
+{% for user in users|dict2items %}
     {{ user.key }}:
       password: {{ user.value.password }}
       options:
-        {% for opt in user.value.options %}
+{% for opt in user.value.options %}
         - {{ opt }}
-        {% endfor %}
-  {% endfor %}
+{% endfor %}
+{% endfor %}
 
 postgresql:
   listen: {{ int }}:5432
