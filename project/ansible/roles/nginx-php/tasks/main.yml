@@ -11,7 +11,8 @@
           - nginx start
           
     - name: Add Nginx config
-      template: src=site.conf dest=/etc/nginx/conf.d/site.conf owner=nginx group=nginx        
+      template: src=site.conf dest=/etc/nginx/conf.d/site.conf owner=nginx group=nginx   
+      when: testfile == yes     
 
     - name: Enable Nginx Service
       service:
