@@ -1,0 +1,37 @@
+---      
+    
+    - name: Download nextcloud release
+      get_url:
+        url: "https://download.nextcloud.com/server/releases/{{ nextcloud_url }}"
+        dest: /tmp/
+
+    - name: Unarchive nextcloud archive
+      unarchive:
+        src: "/tmp/{{ nextcloud_url }}"
+        dest: /tmp/
+
+    - name: copy nextcloud files
+      command: cp -r /tmp/nextcloud /var/www/
+
+    - name: Install semanage
+      yum: pkg=policycoreutils-python state=latest
+
+    - name: Add nextcloud cofig
+      template: src=nextcloud.conf dest=/etc/nginx/conf.d/nextcloud.conf
+
+    - name: setup SElinux
+      command: semanage port -a -t http_port_t -p tcp "{{ item }}"
+      loop:
+        - 8008
+      ignore_errors: True        
+
+    - name: Start patroni  Service
+      service:
+        name: patroni 
+        state: started
+      ignore_errors: True  
+
+
+
+
+

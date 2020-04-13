@@ -1,0 +1,51 @@
+---
+ - hosts: web
+   become: true
+   tasks:
+   - include_role:
+        name: nextcloud-nginx
+     vars:
+       nextcloud_url: nextcloud-18.0.3.zip
+       #testfile:
+       server_name: example.com
+       root: /var/www/
+       max_fails: 1
+       upload_max_filesize: 1000M
+       post_max_size: 1000M
+       max_file_uploads: 2000
+       default_mimetype: "text/html"
+       default_charset: "UTF-8"
+       file_uploads: On
+       zlib_output_compression: Off
+       disable_functions: 
+       disable_classes: 
+       zend_enable_gc: On
+       max_execution_time: 30
+       max_input_time: 60
+       memory_limit: 128M
+       display_errors: Off
+       display_startup_errors: Off
+       log_errors: On
+       log_errors_max_len: 1024
+       ignore_repeated_source: Off
+       ignore_repeated_errors: Off
+       report_memleaks: On
+       html_errors: On
+       default_socket_timeout: 60
+       session_save_handler: files
+       session_use_strict_mode: 0
+       session_use_cookies: 1
+       session_use_only_cookies: 1
+       session_name: PHPSESSID
+       session_auto_start: 0
+       session_cookie_lifetime: 0
+       session_cookie_path: /
+       session_cookie_domain: 
+       session_cookie_httponly: 
+       session_serialize_handler: php
+       session_gc_probability: 1
+       session_gc_divisor: 1000
+       session_gc_maxlifetime: 1440
+       session_cache_expire: 180
+       zend_assertions: -1
+
