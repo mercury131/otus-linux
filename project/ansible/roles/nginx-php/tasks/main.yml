@@ -12,7 +12,7 @@
           
     - name: Add Nginx config
       template: src=site.conf dest=/etc/nginx/conf.d/site.conf owner=nginx group=nginx   
-      when: testfile == yes     
+      when: testfile is defined    
 
     - name: Enable Nginx Service
       service:
@@ -77,7 +77,7 @@
       
     - name: Copy test php file
       copy: src=index.php dest={{ root }}index.php owner=nginx group=nginx
-      when: testfile == yes
+      when: testfile is defined
 
     - name: nginx restart
       service: name=nginx state=restarted
