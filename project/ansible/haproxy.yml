@@ -1,0 +1,26 @@
+---
+ - hosts: haproxy
+   become: true
+   tasks:
+   - include_role:
+        name: haproxy-patroni
+     vars:
+       maxconn: 100
+       mode: tcp
+       retries: 2
+       timeout_client: 30m
+       timeout_connect: 4s
+       timeout_server: 30m
+       timeout_check: 5s
+       stats: enable
+       stats_uri: /
+       bind: 5000
+       option: httpchk
+       check: http-check expect status 200
+       inter: 3s
+       fall: 3
+       rise: 2
+       backends:
+        - server postgres1 192.168.11.108:5432 maxconn 100 check port 8008
+        - server postgres2 192.168.11.109:5432 maxconn 100 check port 8008
+        - server postgres3 192.168.11.110:5432 maxconn 100 check port 8008

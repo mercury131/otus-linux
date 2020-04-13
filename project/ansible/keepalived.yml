@@ -12,3 +12,17 @@
        auth_type: PASS
        auth_pass: Secret
        virtual_ipaddress: 192.168.11.120/24
+
+ - hosts: haproxy
+   become: true
+   tasks:
+   - include_role:
+        name: keepalived
+     vars:
+       interface: enp0s8
+       virtual_router_id: 56
+       #priority: "{{ priority }}"
+       advert_int: 1
+       auth_type: PASS
+       auth_pass: Secret
+       virtual_ipaddress: 192.168.11.121/24

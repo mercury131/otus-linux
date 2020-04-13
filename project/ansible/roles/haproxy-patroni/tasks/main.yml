@@ -1,0 +1,37 @@
+---      
+    
+    - name: Install haproxy
+      yum: pkg=haproxy state=latest
+          
+    - name: Enable haproxy  Service
+      service:
+        name: haproxy 
+        enabled: yes
+
+    - name: Start haproxy  Service
+      service:
+        name: haproxy 
+        state: started
+
+    
+    - name: Add haproxy cofig
+      template: src=haproxy.cfg dest=/etc/haproxy/haproxy.cfg
+
+    - name: setup SElinux
+      command: setsebool -P haproxy_connect_any 1
+
+    - name: Restart haproxy  Service
+      service:
+        name: haproxy 
+        state: restarted
+
+
+    - name: Add  Firewall rules
+      firewalld:
+        port: "{{ item }}/tcp"
+        permanent: yes
+        immediate: yes
+        state: enabled
+      loop:
+        - "{{ bind }}"
+        - 7000

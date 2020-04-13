@@ -6,6 +6,10 @@ proxy2 ansible_user=root priority=100
 nginx1 ansible_user=root role=master
 nginx2 ansible_user=root role=secondary
 
+[haproxy]
+haproxy1 ansible_user=root priority=102
+haproxy2 ansible_user=root priority=100
+
 [proxy:vars]
 port=80
 upstreamname=myapp
