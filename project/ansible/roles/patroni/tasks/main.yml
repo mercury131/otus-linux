@@ -1,0 +1,66 @@
+---      
+    
+    - name: install postgres repo
+      command: 
+        cmd: yum install -y https://download.postgresql.org/pub/repos/yum/reporpms/EL-7-x86_64/pgdg-redhat-repo-latest.noarch.rpm
+        warn: no
+      ignore_errors: True
+
+    - name: Install postgres 12 packages
+      yum:
+        name:
+          - postgresql12-server
+          - postgresql12
+          - postgresql12-devel
+        state: present
+
+    - name: Install EPEL Release
+      yum:
+        name:
+          - epel-release
+        state: present
+
+    - name: install patroni
+      command: 
+        cmd: yum install -y "{{ patroni_package }}"
+        warn: no
+      ignore_errors: True
+
+
+    - name: Install semanage
+      yum: pkg=policycoreutils-python state=latest
+          
+    - name: Enable patroni  Service
+      service:
+        name: patroni 
+        enabled: yes
+
+    - name: Add Firewall rules
+      firewalld:
+        port: "{{ item }}/tcp"
+        permanent: yes
+        immediate: yes
+        state: enabled
+      loop:
+        - 8008
+        - 5432
+ 
+    - name: Add postgres cofig
+      template: src=postgresql.yml dest=/opt/app/patroni/etc/postgresql.yml
+
+    - name: setup SElinux
+      command: semanage port -a -t http_port_t -p tcp "{{ item }}"
+      loop:
+        - 8008
+      ignore_errors: True        
+
+    - name: Start patroni  Service
+      service:
+        name: patroni 
+        state: started
+      ignore_errors: True  
+
+
+
+
+

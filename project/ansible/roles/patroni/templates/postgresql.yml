@@ -1,0 +1,64 @@
+scope: {{ scope }}
+namespace: {{ namespace }}
+name: {{ ETCD_NAME }}
+
+restapi:
+    listen: {{ int }}:8008
+    connect_address: {{ int }}:8008
+
+etcd:
+    {% for etc in etcd %}
+    host: {{ etc }}
+    {% endfor %}
+
+bootstrap:
+  dcs:
+    ttl: {{ patroni_ttl }}
+    loop_wait: {{ loop_wait }}
+    retry_timeout: {{ retry_timeout }}
+    maximum_lag_on_failover: {{ maximum_lag_on_failover }}
+    postgresql:
+      use_pg_rewind: {{ use_pg_rewind }}
+      use_slots: {{ use_slots }}
+      parameters:
+
+  initdb:
+  - encoding: {{ pgencoding }}
+  - data-checksums
+
+  pg_hba:
+  - host replication replicator 127.0.0.1/32 md5
+  {% for pghost in pg_hba %}
+  {{ pghost }}
+  {% endfor %}
+  - host all all 0.0.0.0/0 md5
+
+  users:
+  {% for user in users %}
+    {{ user }}:
+      password: {{ user.value.name }}
+      options:
+        {% for opt in user.value.options %}
+        - {{ opt }}
+        {% endfor %}
+  {% endfor %}
+
+postgresql:
+  listen: {{ int }}:5432
+  connect_address: {{ int }}:5432
+  data_dir: /var/lib/pgsql/12/data
+  bin_dir: /usr/pgsql-12/bin
+  pgpass: /tmp/pgpass
+  authentication:
+    replication:
+      username: {{ replication_username }}
+      password: {{ replication_password }}
+    superuser:
+      username: {{ superuser_username }}
+      password: {{ superuser_password }}
+
+tags:
+    nofailover: {{ nofailover }}
+    noloadbalance: {{ noloadbalance }}
+    clonefrom: {{ clonefrom }}
+    nosync: {{ nosync }}

@@ -1,0 +1,13 @@
+---
+    notification_email: test@local
+    notification_email_from: admin@local
+    smtp_server: 127.0.0.1
+    smtp_connect_timeout: 30
+    router_id: LVS_DEVEL
+    interface: eth0
+    virtual_router_id: 51
+    #priority: 101 #used in election, 101 for master & 100 for backup
+    advert_int: 1
+    auth_type: PASS
+    auth_pass: 1111
+    virtual_ipaddress: 192.168.116.50/24

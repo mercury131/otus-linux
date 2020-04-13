@@ -1,0 +1,41 @@
+---
+ - hosts: patroni
+   become: true
+   tasks:
+   - include_role:
+        name: patroni
+     vars:
+       patroni_package: https://github.com/cybertec-postgresql/patroni-packaging/releases/download/1.6.0-1/patroni-1.6.0-1.rhel7.x86_64.rpm
+       scope: postgres
+       namespace: /pg_cluster/ 
+       etcd:
+        - 192.168.11.108:2379
+        - 192.168.11.109:2379
+        - 192.168.11.110:2379
+       patroni_ttl: 30
+       loop_wait: 10
+       retry_timeout: 10
+       maximum_lag_on_failover: 1048576
+       use_pg_rewind: true
+       use_slots: true
+       pgencoding: UTF8
+       pg_hba:
+        - host replication replicator 192.168.11.101/0 md5
+        - host replication replicator 192.168.11.102/0 md5
+        - host replication replicator 192.168.11.103/0 md5
+        - host all all 0.0.0.0/0 md5
+       users:
+         admin:
+           password: admin
+           options:
+            - createrole
+            - createdb
+       replication_username: replicator
+       replication_password: reppassword
+       superuser_username: postgres
+       superuser_password: postgrespassword
+       nofailover: false
+       noloadbalance: false
+       clonefrom: false
+       nosync: false
+
