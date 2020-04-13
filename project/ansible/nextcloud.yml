@@ -8,8 +8,8 @@
        nextcloud_url: nextcloud-18.0.3.zip
        #testfile:
        server_name: example.com
-       root: /var/www/
-       max_fails: 1
+       root: /var/www/nextcloud
+       datacloud: /gluster/data/
        upload_max_filesize: 1000M
        post_max_size: 1000M
        max_file_uploads: 2000

@@ -13,6 +13,9 @@
     - name: copy nextcloud files
       command: cp -r /tmp/nextcloud /var/www/
 
+    - name: create nextcloud data dir
+      shell: mkdir "{{ datacloud }}" && chown -R nginx:nginx "{{ datacloud }}" && ln -s "{{ datacloud }}" /var/www/nextcloud/data
+
     - name: Install semanage
       yum: pkg=policycoreutils-python state=latest
 
@@ -20,18 +23,21 @@
       template: src=nextcloud.conf dest=/etc/nginx/conf.d/nextcloud.conf
 
     - name: setup SElinux
-      command: semanage port -a -t http_port_t -p tcp "{{ item }}"
+      command: "{{ item }}"
       loop:
-        - 8008
+        - semanage fcontext -a -t httpd_sys_rw_content_t '/var/www/html/nextcloud/data(/.*)?'
+        - semanage fcontext -a -t httpd_sys_rw_content_t '/var/www/html/nextcloud/config(/.*)?'
+        - semanage fcontext -a -t httpd_sys_rw_content_t '/var/www/html/nextcloud/apps(/.*)?'
+        - semanage fcontext -a -t httpd_sys_rw_content_t '/var/www/html/nextcloud/.htaccess'
+        - semanage fcontext -a -t httpd_sys_rw_content_t '/var/www/html/nextcloud/.user.ini'
+        - semanage fcontext -a -t httpd_sys_rw_content_t '/var/www/html/nextcloud/3rdparty/aws/aws-sdk-php/src/data/logs(/.*)?'
+        - restorecon -R '/var/www/html/nextcloud/'
+        - setsebool -P httpd_can_network_connect on
       ignore_errors: True        
 
-    - name: Start patroni  Service
-      service:
-        name: patroni 
-        state: started
-      ignore_errors: True  
 
 
-
+    - name: nginx restart
+      service: name=nginx state=restarted
 
 
