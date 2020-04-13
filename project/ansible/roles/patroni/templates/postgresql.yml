@@ -34,9 +34,9 @@ bootstrap:
   - host all all 0.0.0.0/0 md5
 
   users:
-  {% for user in users %}
-    {{ user }}:
-      password: {{ user.value.name }}
+  {% for user in users|dict2items %}
+    {{ user.key }}:
+      password: {{ user.value.password }}
       options:
         {% for opt in user.value.options %}
         - {{ opt }}
