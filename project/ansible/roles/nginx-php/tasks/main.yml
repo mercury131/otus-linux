@@ -76,6 +76,7 @@
       
     - name: Copy test php file
       copy: src=index.php dest={{ root }}index.php owner=nginx group=nginx
+      when: testfile == yes
 
-    - name: restart nginx
-      command: systemctl restart nginx
+    - name: nginx restart
+      service: name=nginx state=restarted

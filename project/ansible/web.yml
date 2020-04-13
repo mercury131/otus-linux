@@ -6,6 +6,7 @@
         name: nginx-php
      vars:
        port: 80
+       testfile: yes
        server_name: example.com
        root: /var/www/
        max_fails: 1
