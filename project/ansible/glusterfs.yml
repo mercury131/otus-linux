@@ -6,7 +6,8 @@
         name: glusterfs
      vars:
        primary: nginx1
-       secondary: nginx2
+       secondary:
+        - nginx2
        glusterdir: /glusterfs_data
        permissions: '0755'
        glustervolname: volume1

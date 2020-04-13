@@ -51,7 +51,10 @@
         - 631/tcp
 
     - name: Peer Secondary
-      shell: gluster peer probe "{{ secondary }}"
+      shell: gluster peer probe "{{ item }}"
+      loop: "{{ secondary }}"
+      when: role == "master"
+      ignore_errors: True
 
     - name: Create a directory for GlusterFS
       file:
@@ -60,8 +63,23 @@
         mode: "{{ permissions }}"     
 
     - name: Create a replicated GlusterFS Volume
-      shell: gluster volume create "{{ glustervolname }}" replica "{{ replicacount }}" transport tcp "{{ primary }}":"{{ glusterdir }}" "{{ secondary }}":"{{ glusterdir }}" force
-      when: role == "master"
+      shell: gluster volume create "{{ glustervolname }}" replica "{{ replicacount }}" transport tcp "{{ primary }}":"{{ glusterdir }}" "{{ secondary[0] }}":"{{ glusterdir }}" force
+      when: role == "master" and replicacount == 2
+      ignore_errors: True
+
+    - name: Create a replicated GlusterFS Volume
+      shell: gluster volume create "{{ glustervolname }}" replica "{{ replicacount }}" transport tcp "{{ primary }}":"{{ glusterdir }}" "{{ secondary[0] }}":"{{ glusterdir }}"  "{{ secondary[1] }}":"{{ glusterdir }}" force
+      when: role == "master" and replicacount == 3
+      ignore_errors: True
+
+    - name: Create a replicated GlusterFS Volume
+      shell: gluster volume create "{{ glustervolname }}" replica "{{ replicacount }}" transport tcp "{{ primary }}":"{{ glusterdir }}" "{{ secondary[0] }}":"{{ glusterdir }}"  "{{ secondary[1] }}":"{{ glusterdir }}" "{{ secondary[2] }}":"{{ glusterdir }}" force
+      when: role == "master" and replicacount == 4
+      ignore_errors: True
+
+    - name: Create a replicated GlusterFS Volume
+      shell: gluster volume create "{{ glustervolname }}" replica "{{ replicacount }}" transport tcp "{{ primary }}":"{{ glusterdir }}" "{{ secondary[0] }}":"{{ glusterdir }}"  "{{ secondary[1] }}":"{{ glusterdir }}" "{{ secondary[2] }}":"{{ glusterdir }}" "{{ secondary[3] }}":"{{ glusterdir }}" force
+      when: role == "master" and replicacount == 5
       ignore_errors: True
 
     - name: Create a replicated GlusterFS Volume
@@ -87,7 +105,7 @@
         path: "{{ glustermountdir }}"
         src: "{{ primary }}:/{{ glustervolname }}"
         fstype: glusterfs
-        opts: _netdev,backupvolfile-server="{{ secondary }}"
+        opts: _netdev,backupvolfile-server="{{ secondary[0] }}"
         state: mounted
       when: role == "master"
 
