@@ -1,0 +1,54 @@
+---      
+    
+    - name: Install etcd
+      yum: pkg=etcd state=latest
+
+    - name: Install semanage
+      yum: pkg=policycoreutils-python state=latest
+          
+    - name: Enable etcd  Service
+      service:
+        name: etcd 
+        enabled: yes
+
+    - name: Add  Firewall rules
+      firewalld:
+        port: "{{ item }}/tcp"
+        permanent: yes
+        immediate: yes
+        state: enabled
+      loop:
+        - 2379
+        - 2380
+
+    - name: Start etcd  Service
+      service:
+        name: etcd 
+        state: started
+      ignore_errors: True  
+
+    
+    - name: Add etcd cofig
+      template: src=etcd.conf dest=/etc/etcd/etcd.conf
+
+    - name: setup SElinux
+      command: semanage port -a -t http_port_t -p tcp "{{ item }}"
+      loop:
+        - 2379
+        - 2380
+      ignore_errors: True        
+
+    - name: Restart etcd  Service
+      service:
+        name: etcd 
+        state: started
+      when: first is defined
+
+    - name: Restart etcd  Service
+      service:
+        name: etcd 
+        state: restarted
+      when: first is not defined
+
+
+

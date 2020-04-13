@@ -10,6 +10,11 @@ nginx2 ansible_user=root role=secondary
 haproxy1 ansible_user=root priority=102
 haproxy2 ansible_user=root priority=100
 
+[patroni]
+patroni1 ansible_user=root int=192.168.11.108 ETCD_NAME=patroni1 first=yes
+patroni2 ansible_user=root int=192.168.11.109 ETCD_NAME=patroni2
+patroni3 ansible_user=root int=192.168.11.110 ETCD_NAME=patroni3
+
 [proxy:vars]
 port=80
 upstreamname=myapp

@@ -1,0 +1,9 @@
+---
+ - hosts: patroni
+   become: true
+   tasks:
+   - include_role:
+        name: etcd
+     vars:
+       token: nfjsjejkt3kw
+       ETCD_INITIAL_CLUSTER: "patroni1=http://192.168.11.108:2380,patroni2=http://192.168.11.109:2380,patroni3=http://192.168.11.110:2380"
