@@ -1,0 +1,10 @@
+---
+ - import_playbook: keepalived.yml
+ - import_playbook: proxy.yml
+ - import_playbook: glusterfs.yml
+ - import_playbook: web.yml
+ - import_playbook: haproxy.yml
+ - import_playbook: etcd.yml
+ - import_playbook: patroni.yml
+ - import_playbook: create_db.yml
+ - import_playbook: nextcloud.yml
