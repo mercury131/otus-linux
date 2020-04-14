@@ -50,11 +50,11 @@
       service: name=nginx state=restarted
 
 
-    - name: set permissions for  nextcloud files
+    - name: Install nextcloud
       shell: cd /var/www/nextcloud && sudo -u nginx php occ  maintenance:install --database "pgsql" --database-name "{{ dbname }}"  --database-user "{{ dbuser }}" --database-pass "{{ dbpassword }}" --database-host "{{ dbhost }}" --admin-user "{{ nextcloud_user }}" --admin-pass "{{ nextcloud_user_pass }}" --data-dir "{{ datacloud }}" 
       when: ansible_hostname == "{{ setup_host }}"
 
-    - name: set permissions for  nextcloud files
+    - name: set trusted domain
       shell: sed -i 's/localhost/example.com/g' /var/www/nextcloud/config/config.php
       when: ansible_hostname == "{{ setup_host }}"
 
