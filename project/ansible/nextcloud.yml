@@ -18,6 +18,7 @@
        dbpassword: nextcloudpass
        nextcloud_user: admin
        nextcloud_user_pass: admin
+       setup_host: patroni1
        upload_max_filesize: 1000M
        post_max_size: 1000M
        max_file_uploads: 2000
