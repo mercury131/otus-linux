@@ -55,7 +55,7 @@
 
 
     - name: Install nextcloud
-      shell: echo 0 #cd /var/www/nextcloud && sudo -u nginx php occ  maintenance:install --database "pgsql" --database-name "{{ dbname }}"  --database-user "{{ dbuser }}" --database-pass "{{ dbpassword }}" --database-host "{{ dbhost }}" --admin-user "{{ nextcloud_user }}" --admin-pass "{{ nextcloud_user_pass }}" --data-dir "{{ datacloud }}" 
+      shell: cd /var/www/nextcloud && sudo -u nginx php occ  maintenance:install --database "pgsql" --database-name "{{ dbname }}"  --database-user "{{ dbuser }}" --database-pass "{{ dbpassword }}" --database-host "{{ dbhost }}" --admin-user "{{ nextcloud_user }}" --admin-pass "{{ nextcloud_user_pass }}" --data-dir "{{ datacloud }}" 
       when: ansible_hostname == play_hosts[0]
 
     - name: set trusted domain
