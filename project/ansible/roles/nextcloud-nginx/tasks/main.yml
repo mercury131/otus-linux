@@ -62,19 +62,18 @@
       shell: sed -i 's/localhost/example.com/g' /var/www/nextcloud/config/config.php
       when: ansible_hostname == play_hosts[0]
 
-    - name: Copy nexcloud generated config
-      shell: cat /var/www/nextcloud/config/config.php 
-      register: configdata
-      when: ansible_hostname == play_hosts[0]
-      tags: 
-      - config
-
-    - set_fact: 
-        configdata={{ configdata.stdout }}
+    - fetch:
+        src: /var/www/nextcloud/config/config.php
+        dest: /tmp/
+        flat: yes
       when: ansible_hostname == play_hosts[0]
       tags: 
       - config       
 
-    - debug: msg="{{ configdata }}"
+    - name: Copy nexcloud generated config
+      copy:
+        src: /tmp/config.php 
+        dest: /var/www/nextcloud/config/config.php 
+      when: ansible_hostname != play_hosts[0]
       tags: 
       - config
