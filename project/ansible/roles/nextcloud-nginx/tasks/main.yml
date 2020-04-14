@@ -61,3 +61,4 @@
    - name: Copy nexcloud generated config
      synchronize: src=/var/www/nextcloud/config/config.php dest=/var/www/nextcloud/config/config.php
      delegate_to: "{{ setup_host }}"
+     when: ansible_hostname != "{{ setup_host }}"
