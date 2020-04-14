@@ -15,6 +15,9 @@ patroni1 ansible_user=root int=192.168.11.108 ETCD_NAME=patroni1 first=yes
 patroni2 ansible_user=root int=192.168.11.109 ETCD_NAME=patroni2
 patroni3 ansible_user=root int=192.168.11.110 ETCD_NAME=patroni3
 
+[createdb]
+patroni1 ansible_user=root
+
 [proxy:vars]
 port=80
 upstreamname=myapp

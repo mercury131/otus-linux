@@ -1,0 +1,20 @@
+---
+ - hosts: createdb
+   become: true
+   tasks:
+    - name: Install postgresql-libs
+      yum: pkg=postgresql-libs state=latest  
+
+    - name: Install python-psycopg2
+      yum: pkg=python-psycopg2 state=latest 
+  
+    - name: Create nextcloud database
+      postgresql_db:
+        name: nextcloud
+        encoding: UTF-8
+
+    - name: Connect to nextcloud database, create nextcloud user, and grant access to database
+      postgresql_user:
+        db: nextcloud
+        name: nextcloud
+        password: nextcloudpass        
