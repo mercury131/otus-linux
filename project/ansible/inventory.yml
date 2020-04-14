@@ -17,6 +17,8 @@ patroni3 ansible_user=root int=192.168.11.110 ETCD_NAME=patroni3
 
 [createdb]
 patroni1 ansible_user=root
+patroni2 ansible_user=root
+patroni3 ansible_user=root
 
 [proxy:vars]
 port=80

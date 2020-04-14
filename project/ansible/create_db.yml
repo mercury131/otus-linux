@@ -12,6 +12,7 @@
       postgresql_db:
         name: nextcloud
         encoding: UTF-8
+      ignore_errors: True
 
     - name: Connect to nextcloud database, create nextcloud user, and grant access to database
       postgresql_user:
@@ -19,3 +20,4 @@
         name: nextcloud
         password: nextcloudpass   
         priv: "ALL"     
+      ignore_errors: True
