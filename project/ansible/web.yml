@@ -23,7 +23,7 @@
        zend_enable_gc: On
        max_execution_time: 30
        max_input_time: 60
-       memory_limit: 128M
+       memory_limit: 512M
        display_errors: Off
        display_startup_errors: Off
        log_errors: On

@@ -17,4 +17,5 @@
       postgresql_user:
         db: nextcloud
         name: nextcloud
-        password: nextcloudpass        
+        password: nextcloudpass   
+        priv: "ALL"     
