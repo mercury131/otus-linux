@@ -10,6 +10,7 @@
        server_name: example.com
        root: /var/www/
        max_fails: 1
+       cgi_fix_pathinfo: 0
        upload_max_filesize: 1000M
        post_max_size: 1000M
        max_file_uploads: 2000

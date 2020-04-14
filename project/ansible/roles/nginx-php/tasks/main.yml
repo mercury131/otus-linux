@@ -41,13 +41,19 @@
       
     - name: install php72 
       command: 
-        cmd: yum install -y php72 php72-php-fpm php72-php-gd php72-php-json php72-php-mbstring php72-php-mysqlnd php72-php-xml php72-php-xmlrpc php72-php-opcache
+        cmd: yum install -y php72 php72-php-fpm php72-php-gd php72-php-json php72-php-mbstring php72-php-mysqlnd php72-php-xml php72-php-xmlrpc php72-php-opcache php72-php-redis php72-php-memcache php72-php-zip php72-php-pgsql php72-php-intl php72-php-process
         warn: no
       ignore_errors: True
       
     - name: create php symlink
       command: 
         cmd: ln -s /usr/bin/php72 /usr/bin/php
+        warn: no
+      ignore_errors: True
+
+    - name: Set php sessions permissions
+      command: 
+        cmd: chown -R nginx /var/opt/remi/php72/lib/php/
         warn: no
       ignore_errors: True
       
@@ -61,7 +67,7 @@
       ignore_errors: True
 
 
-    - name: Enable Nginx Service
+    - name: Enable php-fpm Service
       service:
         name: php72-php-fpm
         enabled: yes
@@ -81,3 +87,6 @@
 
     - name: nginx restart
       service: name=nginx state=restarted
+
+    - name: php72-php-fpm restart
+      service: name=php72-php-fpm state=restarted      

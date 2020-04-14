@@ -21,8 +21,11 @@
     - name: Install semanage
       yum: pkg=policycoreutils-python state=latest
 
-    - name: Add nextcloud cofig
+    - name: Add nextcloud nginx cofig
       template: src=nextcloud.conf dest=/etc/nginx/conf.d/nextcloud.conf
+
+    - name: Add nextcloud cofig
+      template: src=config.php dest=/var/www/nextcloud/config/config.php      
 
     - name: setup SElinux
       command: "{{ item }}"

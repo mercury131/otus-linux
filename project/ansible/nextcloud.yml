@@ -10,6 +10,12 @@
        server_name: example.com
        root: /var/www/nextcloud
        datacloud: /glusterfs/data/
+       data_dir_in_config: /var/www/nextcloud/data
+       dbtype: pgsql
+       dbhost: 192.168.11.121:5000
+       dbname: nextcloud
+       dbuser: nextcloud
+       dbpassword: nextcloudpass
        upload_max_filesize: 1000M
        post_max_size: 1000M
        max_file_uploads: 2000
