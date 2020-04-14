@@ -15,7 +15,7 @@
       command: cp -rf /tmp/nextcloud /var/www/
 
     - name: create nextcloud data dir
-      shell: mkdir "{{ datacloud }}" && chown -R nginx:nginx "{{ datacloud }}" && ln -s "{{ datacloud }}" /var/www/nextcloud/data
+      shell: mkdir "{{ datacloud }}" && chown -R nginx:nginx "{{ datacloud }}" 
       ignore_errors: True
 
     - name: Install semanage
@@ -51,4 +51,4 @@
 
 
     - name: set permissions for  nextcloud files
-      shell: chmod 755 /var/www/nextcloud && chown -R nginx:nginx /var/www/nextcloud
+      shell: cd /var/www/nextcloud && sudo -u nginx php occ  maintenance:install --database "pgsql" --database-name "{{ dbname }}"  --database-user "{{ dbuser }}" --database-pass "{{ dbpassword }}" --database-host "{{ dbhost }}" --admin-user "{{ nextcloud_user }}" --admin-pass "{{ nextcloud_user_pass }}" --data-dir "{{ datacloud }}" 
