@@ -47,6 +47,7 @@
         - restorecon -R '/var/www/nextcloud/'
         - setsebool -P httpd_can_network_connect on
         - sed -i s/^SELINUX=.*$/SELINUX=permissive/ /etc/selinux/config
+        - setenforce 0
       ignore_errors: True        
 
 

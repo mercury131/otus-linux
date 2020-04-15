@@ -20,6 +20,9 @@ patroni1 ansible_user=root
 patroni2 ansible_user=root
 patroni3 ansible_user=root
 
+[log]
+log ansible_user=root
+
 [proxy:vars]
 port=80
 upstreamname=myapp
