@@ -15,5 +15,11 @@
        backup_dir: /backup
        backup_target: /glusterfs
        BORG_PASSPHRASE: password
+       PGPASSWORD: postgrespassword
+       postgres_host: 192.168.11.121
+       postgres_port: 5000
+       postgres_db: nextcloud
+       postgres_user: postgres
+       postgres_dest: /dbbackup
 
 

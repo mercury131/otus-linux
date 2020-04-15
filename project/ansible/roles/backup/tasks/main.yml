@@ -31,6 +31,22 @@
       shell: mkdir "{{ backup_dir }}"   
       ignore_errors: True
 
+    - name: Create DB backup dir
+      shell: mkdir "{{ postgres_dest }}"   
+      ignore_errors: True      
+
+    - name: Install postgres 12 packages
+      yum:
+        name:
+          - postgresql12
+          - postgresql12-devel
+        state: present        
+
+
+    - name: Create Postgres backup
+      shell: export PGPASSWORD="{{ PGPASSWORD }}" && pg_dump -h "{{ postgres_host }}" -p "{{ postgres_port }}" "{{ postgres_db }}" -U "{{ postgres_user }}" -w > "{{ postgres_dest }}"/db.bak
+      ignore_errors: True      
+
     - name: init backup repo
       shell: export BORG_PASSPHRASE="{{ BORG_PASSPHRASE }}" && borg init --encryption=repokey "{{ backup_dir }}"   
       ignore_errors: True
@@ -41,11 +57,33 @@
 
     - name: Create cron job 
       cron:
+        name: "daily DB backup"
+        minute: "0"
+        hour: "11"
+        job: "export PGPASSWORD={{ PGPASSWORD }} && pg_dump -h {{ postgres_host }} -p {{ postgres_port }} {{ postgres_db }} -U {{ postgres_user }} -w > {{ postgres_dest }}/db-$(date +%Y-%m-%d).bak "
+      with_items:
+        - "{{ PGPASSWORD }}"
+        - "{{ postgres_host }}"
+        - "{{ postgres_port }}"
+        - "{{ postgres_db }}"
+        - "{{ postgres_user }}"
+        - "{{ postgres_dest }}"
+
+    - name: Create cron job 
+      cron:
         name: "daily backup"
         minute: "0"
         hour: "12"
-        job: "export BORG_PASSPHRASE={{ BORG_PASSPHRASE }} && /bin/borg create {{ backup_dir }}::$(date +%Y-%m-%d) {{ backup_target }} "
+        job: "export BORG_PASSPHRASE={{ BORG_PASSPHRASE }} && /bin/borg create {{ backup_dir }} {{ postgres_dest }}::$(date +%Y-%m-%d) {{ backup_target }} "
       with_items:
         - "{{ BORG_PASSPHRASE }}"
         - "{{ backup_dir }}"
         - "{{ backup_target }}"
+        - "{{ postgres_dest }}"
+
+    - name: install postgres repo
+      command: 
+        cmd: yum install -y https://download.postgresql.org/pub/repos/yum/reporpms/EL-7-x86_64/pgdg-redhat-repo-latest.noarch.rpm
+        warn: no
+      ignore_errors: True
+
