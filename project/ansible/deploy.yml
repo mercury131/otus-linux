@@ -8,3 +8,4 @@
  - import_playbook: patroni.yml
  - import_playbook: create_db.yml
  - import_playbook: nextcloud.yml
+ - import_playbook: rsyslog-server.yml

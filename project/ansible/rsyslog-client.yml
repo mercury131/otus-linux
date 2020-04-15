@@ -1,0 +1,8 @@
+---
+ - hosts: log-clients
+   become: true
+   tasks:
+   - include_role:
+        name: rsyslog-client
+     vars:
+       syslog_server: 192.168.11.101:514

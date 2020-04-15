@@ -1,0 +1,42 @@
+---      
+    
+    - name: Install Rsyslog Server
+      yum: pkg=rsyslog state=latest
+
+    - name: Install semanage
+      yum: pkg=policycoreutils-python state=latest
+          
+    - name: Enable Rsyslog  Service
+      service:
+        name: rsyslog 
+        enabled: yes
+
+    - name: Add Rsyslog cofig
+      template: src=rsyslog.conf dest=/etc/rsyslog.conf      
+
+    - name: Add  Firewall rules
+      firewalld:
+        port: "{{ item }}"
+        permanent: yes
+        immediate: yes
+        state: enabled
+      loop:
+        - 514/tcp
+        - 514/udp
+   
+    - name: setup SElinux
+      command: "{{ item }}"
+      loop:
+        - semanage port -a -t syslogd_port_t -p udp 514
+        - semanage port -a -t syslogd_port_t -p tcp 514
+      ignore_errors: True        
+
+    - name: restart rsyslog  Service
+      service:
+        name: rsyslog 
+        state: restarted
+      ignore_errors: True 
+
+
+
+

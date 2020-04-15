@@ -23,6 +23,17 @@ patroni3 ansible_user=root
 [log]
 log ansible_user=root
 
+[log-clients]
+patroni1 ansible_user=root
+patroni2 ansible_user=root
+patroni3 ansible_user=root
+proxy1 ansible_user=root 
+proxy2 ansible_user=root 
+nginx1 ansible_user=root 
+nginx2 ansible_user=root 
+haproxy1 ansible_user=root 
+haproxy2 ansible_user=root 
+
 [proxy:vars]
 port=80
 upstreamname=myapp
