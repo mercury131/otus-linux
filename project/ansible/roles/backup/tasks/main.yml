@@ -1,0 +1,51 @@
+---
+      
+    - name: Install centos release gluster
+      yum: pkg="{{ glustersigpackage }}"  state=latest
+
+    - name: Install GlusterFS client packages
+      yum:
+        name:
+          - glusterfs
+          - glusterfs-fuse
+        state: present
+
+    - name: Create a directory for GlusterFS mount point
+      file:
+        path: "{{ glustermountdir }}"
+        state: directory
+        mode: "{{ mntpermissions }}"
+
+    - name: Mount GlusterFS Volume
+      mount:
+        path: "{{ glustermountdir }}"
+        src: "{{ primary }}:/{{ glustervolname }}"
+        fstype: glusterfs
+        opts: _netdev,backupvolfile-server="{{ secondary[0] }}"
+        state: mounted
+
+    - name: Install borgbackup
+      yum: pkg=borgbackup  state=latest
+
+    - name: Create backup dir
+      shell: mkdir "{{ backup_dir }}"   
+      ignore_errors: True
+
+    - name: init backup repo
+      shell: export BORG_PASSPHRASE="{{ BORG_PASSPHRASE }}" && borg init --encryption=repokey "{{ backup_dir }}"   
+      ignore_errors: True
+      
+    - name: Create Files backup
+      shell: export BORG_PASSPHRASE="{{ BORG_PASSPHRASE }}" && borg create "{{ backup_dir }}"::Today "{{ backup_target }}"        
+      ignore_errors: True
+
+    - name: Create cron job 
+      cron:
+        name: "daily backup"
+        minute: "0"
+        hour: "12"
+        job: "export BORG_PASSPHRASE={{ BORG_PASSPHRASE }} && /bin/borg create {{ backup_dir }}::$(date +%Y-%m-%d) {{ backup_target }} "
+      with_items:
+        - "{{ BORG_PASSPHRASE }}"
+        - "{{ backup_dir }}"
+        - "{{ backup_target }}"

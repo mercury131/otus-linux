@@ -9,3 +9,4 @@
  - import_playbook: create_db.yml
  - import_playbook: nextcloud.yml
  - import_playbook: rsyslog-server.yml
+ - import_playbook: backup-files.yml

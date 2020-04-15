@@ -23,6 +23,9 @@ patroni3 ansible_user=root
 [log]
 log ansible_user=root
 
+[backup]
+backup ansible_user=root
+
 [log-clients]
 patroni1 ansible_user=root
 patroni2 ansible_user=root

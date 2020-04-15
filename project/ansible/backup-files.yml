@@ -1,0 +1,19 @@
+---
+ - hosts: backup
+   become: true
+   tasks:
+   - include_role:
+        name: backup
+     vars:
+       primary: nginx1
+       secondary:
+        - nginx2
+       glustervolname: volume1
+       glustermountdir: /glusterfs
+       mntpermissions: '0755'
+       glustersigpackage: centos-release-gluster7
+       backup_dir: /backup
+       backup_target: /glusterfs
+       BORG_PASSPHRASE: password
+
+
