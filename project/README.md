@@ -206,3 +206,40 @@ proxy2                     : ok=23   changed=19   unreachable=0    failed=0    s
 Попробуйте загрузить файл в облако:
 
 ![upload](https://raw.githubusercontent.com/mercury131/otus-linux/master/project/upload.gif)
+
+Далее, на машине backup, проверяем наличие резервных копий:
+
+```
+vagrant ssh backup
+sudo -i
+[root@backup ~]# borg list /backup/
+Enter passphrase for key /backup: 
+Today                                Thu, 2020-04-16 21:34:08 [98b143eb019a9a453b3a707f49f44748e1f5e4b0008fe4a761df18cde2e4e166]
+[root@backup ~]# 
+```
+
+Далее, подключаемся к машине log, и проверяем что логи с серверов собираются корректно:
+
+```
+ssh log
+
+[root@log ~]# ls /var/log/
+127.0.0.1       192.168.11.107  boot.log   grubby              maillog   patroni3  tallylog             wtmp
+192.168.11.102  192.168.11.108  btmp       grubby_prune_debug  messages  proxy1    tuned                yum.log       
+192.168.11.103  192.168.11.109  cron       haproxy1            nginx1    proxy2    vboxadd-install.log
+192.168.11.104  192.168.11.110  dmesg      haproxy2            nginx2    rhsm      vboxadd-setup.log
+192.168.11.105  anaconda        dmesg.old  lastlog             patroni1  secure    vboxadd-setup.log.1
+192.168.11.106  audit           firewalld  log                 patroni2  spooler   vboxadd-setup.log.2
+
+[root@log ~]# ls /var/log/patroni1
+patroni.log  polkitd.log  rsyslogd.log  sshd.log  systemd.log  systemd-logind.log
+
+```
+
+Проверяем отказоустойчивость приложения, выполняем команду, которая погасит половину инфраструктуры:
+
+```
+vagrant halt --force nginx1 proxy1 haproxy1 patroni1 
+```
+
+Обновляем страницу http://example.com и проверяем что все работает корректно.
