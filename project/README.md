@@ -54,6 +54,12 @@ Backup базы данных, выполняется раз в сутки обы
 Деплой и конфигурирование автоматизировано с помощью Ansible ролей и Playbook.
 Все переменные задаются в playbook и частично в inventory.
 
+На всех сервера включен и настроен firewall 
+
+Также на всех серверах (кроме серверов с nginx и php-fpm) настроен SElinux
+Сервера с nginx и php-fpm работают в режиме permissive из-за этого бага с GlusterFS:
+https://github.com/gluster/glusterfs/issues/593
+
 # **Описание Деплоя:**
 
 Ansible роли расположены в репозитории - - **https://github.com/mercury131/otus-linux/tree/master/project/ansible/roles**
@@ -172,3 +178,29 @@ vagrant ssh backup
 sudo -i
 ansible-playbook /vagrant/ansible/deploy.yml  -i /vagrant/ansible/inventory.yml
 ```
+
+В результате вывод palaybook должен выглядеть так:
+
+```
+PLAY RECAP ***********************************************************************************************************backup                     : ok=15   changed=14   unreachable=0    failed=0    skipped=0    rescued=0    ignored=0    
+haproxy1                   : ok=22   changed=18   unreachable=0    failed=0    skipped=0    rescued=0    ignored=1    
+haproxy2                   : ok=22   changed=18   unreachable=0    failed=0    skipped=0    rescued=0    ignored=1    
+log                        : ok=8    changed=6    unreachable=0    failed=0    skipped=0    rescued=0    ignored=1    
+nginx1                     : ok=59   changed=49   unreachable=0    failed=0    skipped=7    rescued=0    ignored=1    
+nginx2                     : ok=54   changed=44   unreachable=0    failed=0    skipped=12   rescued=0    ignored=2    
+patroni1                   : ok=33   changed=22   unreachable=0    failed=0    skipped=1    rescued=0    ignored=4    
+patroni2                   : ok=33   changed=25   unreachable=0    failed=0    skipped=1    rescued=0    ignored=2    
+patroni3                   : ok=33   changed=23   unreachable=0    failed=0    skipped=1    rescued=0    ignored=4    
+proxy1                     : ok=23   changed=19   unreachable=0    failed=0    skipped=0    rescued=0    ignored=1    
+proxy2                     : ok=23   changed=19   unreachable=0    failed=0    skipped=0    rescued=0    ignored=1 
+```
+
+# **Проверка приложения и компонентов:**
+
+Чтобы проверить работоспособность приложения откройте браузер, и перейдите на страницу http://example.com
+
+Авторизуйтесь под пользователем admin, с паролем admin
+
+Попробуйте загрузить файл в облако:
+
+![upload](https://raw.githubusercontent.com/mercury131/otus-linux/master/project/upload.gif)
