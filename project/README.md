@@ -121,4 +121,40 @@ haproxy1 ansible_user=root priority=102
 haproxy2 ansible_user=root priority=100
 ```
 
+# **Запуск и деплой проекта:**
 
+Для запуска проекта должен быть установлен Virtualbox и Vagrant
+
+Также рекомендуется использовать минимум 8GB RAM 
+
+Для запуска Vagrantfile шагами развертывания VM выполните:
+
+Склонируйте репозиторий:
+
+```
+git clone git@github.com:mercury131/otus-linux.git
+```
+
+Установите необходимые плагины для vagrant:
+
+```
+vagrant plugin install vagrant-reload
+```
+
+Добавьте в локальный файл hosts следующую строку:
+
+```
+192.168.11.120 example.com
+```
+
+```
+cd otus-linux/project
+vagrant up 
+```
+Для деплоя проекта, подключитесь к машине с Ansible и выполните:
+
+```
+vagrant ssh backup
+sudo -i
+ansible-playbook /vagrant/ansible/deploy.yml  -i /vagrant/ansible/inventory.yml
+```
