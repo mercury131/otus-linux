@@ -242,4 +242,4 @@ patroni.log  polkitd.log  rsyslogd.log  sshd.log  systemd.log  systemd-logind.lo
 vagrant halt --force nginx1 proxy1 haproxy1 patroni1 
 ```
 
-Обновляем страницу http://example.com и проверяем что все работает корректно.
+Обновляем страницу http://example.com, перелогиниваемся и проверяем что все работает корректно.
