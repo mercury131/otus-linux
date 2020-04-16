@@ -201,6 +201,8 @@ proxy2                     : ok=23   changed=19   unreachable=0    failed=0    s
 
 Авторизуйтесь под пользователем admin, с паролем admin
 
+![upload](https://raw.githubusercontent.com/mercury131/otus-linux/master/project/login.gif)
+
 Попробуйте загрузить файл в облако:
 
 ![upload](https://raw.githubusercontent.com/mercury131/otus-linux/master/project/upload.gif)
