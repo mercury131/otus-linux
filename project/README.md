@@ -44,9 +44,74 @@
 Backup базы данных, выполняется раз в сутки обычным pg_dump, и с помощью Borg backup , складывается в репозиторий.
 
 Деплой и конфигурирование автоматизировано с помощью Ansible ролей и Playbook.
-Все переменные задаются в playbook и частично в inventory
+Все переменные задаются в playbook и частично в inventory.
 
+# **Описание Деплоя:**
 
+Ansible роли расположены в репозитории - - **https://github.com/mercury131/otus-linux/tree/master/project/ansible/roles**
+
+Ansible Playbook-и расположены в каталоге - **https://github.com/mercury131/otus-linux/tree/master/project/ansible/**
+
+Для деплоя проекта используется общий Playbook, который содержит автоматизированные шаги установки:
+**https://github.com/mercury131/otus-linux/tree/master/project/ansible/deploy.yml**
+
+```
+---
+ - import_playbook: keepalived.yml
+ - import_playbook: proxy.yml
+ - import_playbook: glusterfs.yml
+ - import_playbook: web.yml
+ - import_playbook: haproxy.yml
+ - import_playbook: etcd.yml
+ - import_playbook: patroni.yml
+ - import_playbook: create_db.yml
+ - import_playbook: nextcloud.yml
+ - import_playbook: rsyslog-server.yml
+ - import_playbook: backup-files.yml
+```
+
+Переменные указываются в Playbook или inventory, в зависимости от компонента, например:
+
+**keepalived.yml:**
+```
+---
+ - hosts: proxy
+   become: true
+   tasks:
+   - include_role:
+        name: keepalived
+     vars:
+       interface: enp0s8
+       virtual_router_id: 55
+       advert_int: 1
+       auth_type: PASS
+       auth_pass: Secret
+       virtual_ipaddress: 192.168.11.120/24
+
+ - hosts: haproxy
+   become: true
+   tasks:
+   - include_role:
+        name: keepalived
+     vars:
+       interface: enp0s8
+       virtual_router_id: 56
+       advert_int: 1
+       auth_type: PASS
+       auth_pass: Secret
+       virtual_ipaddress: 192.168.11.121/24
+```
+
+**inventory.yml:**
+```
+[proxy]
+proxy1 ansible_user=root priority=102
+proxy2 ansible_user=root priority=100
+
+[haproxy]
+haproxy1 ansible_user=root priority=102
+haproxy2 ansible_user=root priority=100
+```
 Используемые репозитории:
 - **https://github.com/mercury131/otus-linux** - репозиторий для выполнения домашних заданий OTUS
 - **https://github.com/mercury131/otus-linux/tree/master/lesson28** - ссылка на данное домашнее задание
