@@ -6,56 +6,67 @@ MACHINES = {
   :log => {
         :box_name => "cdaf/CentOSLVM",
         :ip_addr => '192.168.11.101',
+        :box_version => "1.9.1",
   },
 
   :proxy1 => {
         :box_name => "cdaf/CentOSLVM",
         :ip_addr => '192.168.11.102',
+        :box_version => "1.9.1",
   },
 
   :proxy2 => {
         :box_name => "cdaf/CentOSLVM",
         :ip_addr => '192.168.11.103',
+        :box_version => "1.9.1",
   },
 
   :nginx1 => {
         :box_name => "cdaf/CentOSLVM",
         :ip_addr => '192.168.11.104',
+        :box_version => "1.9.1",
   },
 
   :nginx2 => {
         :box_name => "cdaf/CentOSLVM",
         :ip_addr => '192.168.11.105',
+        :box_version => "1.9.1",
   },
 
   :haproxy1 => {
         :box_name => "cdaf/CentOSLVM",
         :ip_addr => '192.168.11.106',
+        :box_version => "1.9.1",
   },
 
   :haproxy2 => {
         :box_name => "cdaf/CentOSLVM",
         :ip_addr => '192.168.11.107',
+        :box_version => "1.9.1",
   },
 
   :patroni1 => {
         :box_name => "cdaf/CentOSLVM",
         :ip_addr => '192.168.11.108',
+        :box_version => "1.9.1",
   },
 
   :patroni2 => {
         :box_name => "cdaf/CentOSLVM",
         :ip_addr => '192.168.11.109',
+        :box_version => "1.9.1",
   },
 
   :patroni3 => {
         :box_name => "cdaf/CentOSLVM",
         :ip_addr => '192.168.11.110',
+        :box_version => "1.9.1",
   },
 
   :backup => {
         :box_name => "cdaf/CentOSLVM",
         :ip_addr => '192.168.11.111',
+        :box_version => "1.9.1",
   },
   
 }
