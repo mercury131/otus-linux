@@ -211,6 +211,7 @@ proxy2                     : ok=23   changed=19   unreachable=0    failed=0    s
 ![upload](https://raw.githubusercontent.com/mercury131/otus-linux/master/project/upload.gif)
 
 Далее, на машине backup проверяем наличие резервных копий:
+passphrase для Borg - password
 
 ```
 vagrant ssh backup
