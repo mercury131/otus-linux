@@ -144,6 +144,9 @@ Vagrant.configure("2") do |config|
 		  export ANSIBLE_HOST_KEY_CHECKING=false
 		  echo "[defaults]" >> /root/.ansible.cfg
               echo "host_key_checking = False" >> /root/.ansible.cfg
+              yum install -y httpd-tools
+              echo "192.168.11.120  example.com" >> /etc/hosts
+              # ab -kc 1000 -t 60 http://example.com/
 		  # rm -rf /root/.ansible/roles/ && rm -rf /home/vagrant/.ansible/roles/ && rm -rf /etc/ansible/roles/ && cp -r /vagrant/ansible/roles /etc/ansible/roles && cp -r /vagrant/ansible/roles /home/vagrant/.ansible/ && cp -r /vagrant/ansible/roles /root/.ansible/ 
 		  #ansible-playbook /home/vagrant/laravel.yml  -i /home/vagrant/.ansible/inventory.yml
 		  #ansible-playbook /home/vagrant/python.yml  -i /home/vagrant/.ansible/inventory.yml

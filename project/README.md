@@ -222,6 +222,20 @@ Today                                Thu, 2020-04-16 21:34:08 [98b143eb019a9a453
 [root@backup ~]# 
 ```
 
+Также проверим что задания резервного копирования в Cron создались:
+
+```
+crontab -e
+#Ansible: daily DB backup
+0 11 * * * export PGPASSWORD=postgrespassword && pg_dump -h 192.168.11.121 -p 5000 nextcloud -U postgres -w > /dbbackup/db-$(date +%Y-%m-%d).bak
+#Ansible: daily backup
+0 12 * * * export BORG_PASSPHRASE=password && /bin/borg create /backup /dbbackup::$(date +%Y-%m-%d) /glusterfs
+```
+В данном случае стратегия резервного копирования простая:
+- Каждую ночь, с примонтированнаго volume GlusterFS, делается резервная копия в хранилище Borg 
+- Перед этим выполняется операция снятия дампа БД, которая также попадает в хранилище Borg
+
+
 Далее, подключаемся к машине log, и проверяем что логи с серверов собираются корректно:
 
 ```
@@ -241,7 +255,7 @@ patroni.log  polkitd.log  rsyslogd.log  sshd.log  systemd.log  systemd-logind.lo
 ```
 
 Проверяем отказоустойчивость приложения, выполняем команду, которая погасит половину инфраструктуры:
-
+Обратите внимание, что команда запускается с параметром --force, который выполняет команду PowerOff в VirtualBox, вместо команды Shutdown.
 ```
 vagrant halt --force nginx1 proxy1 haproxy1 patroni1 
 ```
