@@ -30,10 +30,12 @@
     - name: Create backup dir
       shell: mkdir "{{ backup_dir }}"   
       ignore_errors: True
+      
 
     - name: Create DB backup dir
       shell: mkdir "{{ postgres_dest }}"   
-      ignore_errors: True      
+      ignore_errors: True    
+
 
     - name: install postgres repo
       command: 
@@ -49,21 +51,25 @@
         state: present        
 
 
-    - name: Create Postgres backup
+    - name: Create Postgres backup dump
       shell: export PGPASSWORD="{{ PGPASSWORD }}" && pg_dump -h "{{ postgres_host }}" -p "{{ postgres_port }}" "{{ postgres_db }}" -U "{{ postgres_user }}" -w > "{{ postgres_dest }}"/db.bak
-      ignore_errors: True      
+      ignore_errors: True    
+
+    - name: Create Postgres backup
+      shell: export PGPASSWORD=reppassword && mkdir /dbbackup/db-$(date +%Y-%m-%d) && pg_basebackup -D /dbbackup/db-$(date +%Y-%m-%d) -h 192.168.11.109 -U replicator --no-password
+      ignore_errors: True   
 
     - name: init backup repo
       shell: export BORG_PASSPHRASE="{{ BORG_PASSPHRASE }}" && borg init --encryption=repokey "{{ backup_dir }}"   
       ignore_errors: True
       
     - name: Create Files backup
-      shell: export BORG_PASSPHRASE="{{ BORG_PASSPHRASE }}" && borg create "{{ backup_dir }}"::Today "{{ backup_target }}"        
+      shell: export BORG_PASSPHRASE="{{ BORG_PASSPHRASE }}" && borg create "{{ backup_dir }}"::Today "{{ backup_target }}" "{{ postgres_dest }}"        
       ignore_errors: True
 
     - name: Create cron job 
       cron:
-        name: "daily DB backup"
+        name: "daily DB dump backup"
         minute: "0"
         hour: "11"
         job: "export PGPASSWORD={{ PGPASSWORD }} && pg_dump -h {{ postgres_host }} -p {{ postgres_port }} {{ postgres_db }} -U {{ postgres_user }} -w > {{ postgres_dest }}/db-$(date +%Y-%m-%d).bak "
@@ -77,10 +83,24 @@
 
     - name: Create cron job 
       cron:
+        name: "daily DB backup"
+        minute: "0"
+        hour: "10"
+        job: "export PGPASSWORD=reppassword && mkdir /dbbackup/db-$(date +%Y-%m-%d) && pg_basebackup -D /dbbackup/db-$(date +%Y-%m-%d) -h 192.168.11.109 -U replicator --no-password"
+      with_items:
+        - "{{ PGPASSWORD }}"
+        - "{{ postgres_host }}"
+        - "{{ postgres_port }}"
+        - "{{ postgres_db }}"
+        - "{{ postgres_user }}"
+        - "{{ postgres_dest }}"
+
+    - name: Create cron job 
+      cron:
         name: "daily backup"
         minute: "0"
         hour: "12"
-        job: "export BORG_PASSPHRASE={{ BORG_PASSPHRASE }} && /bin/borg create {{ backup_dir }} {{ postgres_dest }}::$(date +%Y-%m-%d) {{ backup_target }} "
+        job: "export BORG_PASSPHRASE={{ BORG_PASSPHRASE }} && /bin/borg create {{ backup_dir }}::$(date +%Y-%m-%d) {{ backup_target }} {{ postgres_dest }}"
       with_items:
         - "{{ BORG_PASSPHRASE }}"
         - "{{ backup_dir }}"
