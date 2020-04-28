@@ -23,7 +23,7 @@
         - host replication replicator 192.168.11.108/0 md5
         - host replication replicator 192.168.11.109/0 md5
         - host replication replicator 192.168.11.110/0 md5
-        - host all barman 192.168.11.101/24 trust
+        - host all backup 192.168.11.111/24 trust
         - host all all 0.0.0.0/0 md5
        users:
          admin:
