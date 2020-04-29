@@ -1,0 +1,163 @@
+Авторизуемся, загрузим файлы
+
+Проверим Firewall и SE Linux
+
+ansible all -m shell -a "firewall-cmd --state" -i /vagrant/ansible/inventory.yml
+
+ansible all -m shell -a "firewall-cmd --list-all" -i /vagrant/ansible/inventory.yml
+
+ansible all -m shell -a "getenforce" -i /vagrant/ansible/inventory.yml
+
+
+Проверим защиту от DDOS
+
+ab -kc 1000 -t 60 http://example.com/
+
+
+Проверим есть ли Бэкапы?
+
+borg list /backup/
+
+Создадим свежий бэкап, после загрузки файлов
+
+export PGPASSWORD=postgrespassword && pg_dump -h 192.168.11.121 -p 5000 nextcloud -U postgres -w > /dbbackup/db-$(date +%Y-%m-%d).bak
+
+export PGPASSWORD=reppassword && mkdir /dbbackup/db-now && pg_basebackup -D /dbbackup/db-now -h 192.168.11.109 -U replicator --no-password
+
+export BORG_PASSPHRASE=password && /bin/borg create /backup::NOW /glusterfs /dbbackup
+
+ls /dbbackup/db-now/
+
+borg list /backup/
+
+Грохнем PROD базу и файлы пользователей
+
+rm -rf /glusterfs/data
+
+PGPASSWORD - postgrespassword 
+
+psql -h 192.168.11.121 -p 5000 -U postgres -W
+
+Смотрим базы:
+\l
+
+Удаляем базу:
+
+#UPDATE pg_database SET datallowconn = 'false' WHERE datname = 'nextcloud'
+
+#ALTER DATABASE nextcloud CONNECTION LIMIT 0
+
+SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = 'nextcloud';
+
+drop database nextcloud;
+
+Смотрим базы:
+\l
+
+Смотри и запоминаем мастер хост
+select inet_server_addr();
+
+выходим
+\q
+
+Восстанавливаем базу.
+
+Создадим ее Ансиблом
+
+найдем наш мастер хост
+
+cat /etc/hosts | grep 
+
+Запустим Playbook
+
+ansible-playbook /vagrant/ansible/create_db.yml -i /vagrant/ansible/inventory.yml --limit patroni1
+
+
+Теперь выгрузим базу из бэкапа:
+
+borg extract /backup::NOW dbbackup/db-$(date +%Y-%m-%d).bak
+
+ls dbbackup
+
+Посмотрим там вообще что-то есть?
+
+more dbbackup/db-$(date +%Y-%m-%d).bak
+
+Восстановим базу
+
+PGPASSWORD - postgrespassword
+
+psql -h 192.168.11.121 -p 5000 -U postgres -W -d nextcloud < dbbackup/db-$(date +%Y-%m-%d).bak
+
+Подключимся и проверим что все на месте:
+
+psql -h 192.168.11.121 -p 5000 -U postgres -W
+
+\l
+
+\c nextcloud
+
+\dt
+
+Проверяем как там приложение.
+
+Восстанавливаем файлы.
+
+borg extract /backup::NOW glusterfs/data
+
+ls glusterfs
+
+mv glusterfs/data /glusterfs/data
+
+ls -la /glusterfs/data/
+
+ansible nginx1 -m shell -a "chown -R nginx:nginx /glusterfs/data" -i /vagrant/ansible/inventory.yml 
+
+
+
+
+psql -h 192.168.11.121 -p 5000 -U postgres -W
+
+Смотрим базы:
+\l
+
+Удаляем базу:
+
+#UPDATE pg_database SET datallowconn = 'false' WHERE datname = 'nextcloud'
+
+#ALTER DATABASE nextcloud CONNECTION LIMIT 0
+
+SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = 'nextcloud';
+
+drop database nextcloud;
+
+Смотрим базы:
+\l
+
+Останавливаем везде patroni
+
+ansible patroni1 -m shell -a "systemctl stop patroni" -i /vagrant/ansible/inventory.yml 
+
+Распаковываем бэкап файлов БД
+
+borg extract /backup::NOW dbbackup
+
+ls dbbackup/db-now/
+
+перемещаем старые файлы данных на всех серверах 
+
+ansible patroni2 -m shell -a "mv /var/lib/pgsql/12/data/ /root/" -i /vagrant/ansible/inventory.yml 
+
+Копируем файлы на все сервера patroni
+
+scp -r dbbackup/db-now root@patroni1:/var/lib/pgsql/12/data
+
+Восстанавливаем права доступа на всех серверах
+
+ansible patroni1 -m shell -a "chown -R postgres:postgres /var/lib/pgsql/12/data/" -i /vagrant/ansible/inventory.yml 
+
+ansible patroni1 -m shell -a "chmod 0700 /var/lib/pgsql/12/data/" -i /vagrant/ansible/inventory.yml 
+
+Запускаем Patroni
+
+ansible patroni1 -m shell -a "systemctl start patroni" -i /vagrant/ansible/inventory.yml 
